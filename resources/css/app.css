@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+	@media (orientation: portrait) {
+		.portrait\:flex-col { flex-direction: column; }
+		.portrait\:items-start { align-items: flex-start; }
+		.portrait\:items-stretch { align-items: stretch; }
+		.portrait\:justify-start { justify-content: flex-start; }
+		.portrait\:gap-3 { gap: 0.75rem; }
+		.portrait\:gap-4 { gap: 1rem; }
+		.portrait\:grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+		.portrait\:w-full { width: 100%; }
+		.portrait\:text-center { text-align: center; }
+	}
+
+	@media (orientation: landscape) {
+		.landscape\:flex-row { flex-direction: row; }
+		.landscape\:items-center { align-items: center; }
+		.landscape\:gap-6 { gap: 1.5rem; }
+		.landscape\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+		.landscape\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+		.landscape\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+		.landscape\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+	}
+}
