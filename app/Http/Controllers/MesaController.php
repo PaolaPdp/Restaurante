@@ -75,4 +75,34 @@ class MesaController extends Controller
 
         return back()->with('success', 'Mesa liberada.');
     }
+
+    public function unir(Request $request)
+{
+    $mesaIds = $request->input('mesas', []);
+
+        if (count($mesaIds) < 2) {
+            return back()->with('error', 'Selecciona al menos dos mesas para unir.');
+        }
+
+        $mesas = Mesa::whereIn('id', $mesaIds)->get();
+
+        // Crear nueva mesa combinada
+        $nuevaMesa = Mesa::create([
+            'numero' => $mesas->pluck('numero')->join('-'),
+            'capacidad' => $mesas->sum('capacidad'),
+            'estado' => 'libre',
+            'combinada' => true,
+            'mesas_unidas' => $mesaIds,
+        ]);
+
+        // Bloquear las originales
+        Mesa::whereIn('id', $mesaIds)->update(['estado' => 'bloqueada']);
+
+        return redirect()->route('mesas.index')->with('success', 'Mesas unidas correctamente como Mesa ' . $nuevaMesa->numero);
+}
+
+    
+
+
+
 }

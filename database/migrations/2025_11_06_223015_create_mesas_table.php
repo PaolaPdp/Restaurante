@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::table('mesas', function (Blueprint $table) {
+        $table->boolean('combinada')->default(false);
+        $table->json('mesas_unidas')->nullable(); // guarda IDs de mesas originales
+    });
+    
         Schema::create('mesas', function (Blueprint $table) {
             $table->id();
             $table->string('numero')->unique();
