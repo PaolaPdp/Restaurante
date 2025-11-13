@@ -30,7 +30,13 @@ Route::middleware(['auth'])->group(function () {
 
 		Route::post('/mesas/unir', [\App\Http\Controllers\MesaController::class, 'unir'])->name('mesas.unir');
 
-		Route::delete('/mesas/{mesa}/separar', [\App\Http\Controllers\MesaController::class, 'separar'])->name('mesas.separar');
+		Route::post('/mesas/unir', [MesaController::class, 'unir'])->name('mesas.unir');
+
+
+		Route::post('/mesas/separar', [MesaController::class, 'separar'])->name('mesas.separar');
+	
+
+
 
 
 	});
@@ -47,6 +53,13 @@ Route::middleware(['auth'])->group(function () {
 		Route::post('pedidos/{pedido}/enviar', [PedidoController::class, 'enviarACocina'])->name('pedidos.enviar');
 		Route::post('pedidos/{pedido}/servido', [PedidoController::class, 'marcarServido'])->name('pedidos.servido');
 		Route::post('pedidos/{pedido}/anular', [PedidoController::class, 'anular'])->name('pedidos.anular');
+
+		Route::post('/pedidos/{pedido}/cambiar-mesa', [PedidoController::class, 'cambiarMesa'])->name('pedidos.cambiarMesa');
+
+		Route::post('/pedidos/{pedido}/cambiar-mesa', [App\Http\Controllers\PedidoController::class, 'cambiarMesa'])
+    ->name('pedidos.cambiarMesa');
+
+
 	});
 
 	Route::middleware('role:admin,cocina')->group(function () {

@@ -8,9 +8,20 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Schema::table('mesas', function (Blueprint $table) {
+        // $table->boolean('combinada')->default(false);
+        // $table->json('mesas_unidas')->nullable(); // guarda IDs de mesas originales
         Schema::table('mesas', function (Blueprint $table) {
-        $table->boolean('combinada')->default(false);
-        $table->json('mesas_unidas')->nullable(); // guarda IDs de mesas originales
+        if (!Schema::hasColumn('mesas', 'combinada')) {
+            $table->boolean('combinada')->default(false);
+        }
+        if (!Schema::hasColumn('mesas', 'combinada_con')) {
+            $table->string('combinada_con')->nullable();
+        }
+
+        if (!Schema::hasColumn('mesas', 'observaciones')) {
+            $table->text('observaciones')->nullable();
+        }
     });
     
         Schema::create('mesas', function (Blueprint $table) {
@@ -34,6 +45,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('mesas');
+
+        Schema::table('mesas', function (Blueprint $table) {
+        $table->dropColumn('observaciones');
+    });
     }
 
     

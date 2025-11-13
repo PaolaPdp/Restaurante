@@ -89,6 +89,42 @@
               @csrf
               <button class="rounded-md bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700">Anular pedido</button>
             </form>
+            <button id="btnCambiarMesa"
+  class="rounded-md bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700">
+  Cambiar mesa
+</button>
+
+<div id="modalCambiarMesa" class="fixed inset-0 hidden bg-black bg-opacity-40 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg p-6 w-96">
+    <h3 class="text-lg font-semibold mb-4 text-slate-800">Cambiar pedido de mesa</h3>
+
+    <form method="POST" action="{{ route('pedidos.cambiarMesa', $pedido->id) }}">
+  @csrf
+  <label for="nueva_mesa_id" class="block text-sm mb-2">Selecciona nueva mesa:</label>
+  <select name="nueva_mesa_id" id="nueva_mesa_id" class="w-full border rounded-md p-2 mb-4">
+    @foreach($mesas->where('estado', 'libre') as $mesa)
+      <option value="{{ $mesa->id }}">Mesa {{ $mesa->numero }}</option>
+    @endforeach
+  </select>
+
+  <div class="flex justify-end gap-2">
+    <button type="button" id="btnCancelarCambio" class="px-4 py-2 bg-slate-200 rounded-md hover:bg-slate-300">Cancelar</button>
+    <button type="submit" class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700">Confirmar</button>
+  </div>
+</form>
+
+  </div>
+</div>
+
+<script>
+  const btnCambiarMesa = document.getElementById('btnCambiarMesa');
+  const modalCambiarMesa = document.getElementById('modalCambiarMesa');
+  const btnCancelarCambio = document.getElementById('btnCancelarCambio');
+
+  btnCambiarMesa.addEventListener('click', () => modalCambiarMesa.classList.remove('hidden'));
+  btnCancelarCambio.addEventListener('click', () => modalCambiarMesa.classList.add('hidden'));
+</script>
+
           @endif
         @endif
 

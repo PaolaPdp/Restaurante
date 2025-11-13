@@ -13,6 +13,24 @@
   </button>
 </div>
 
+{{-- ✅ Mostrar mensaje si hay mesas unidas --}}
+@if($mesas->where('combinada', 1)->isNotEmpty())
+  <div class="mb-4 p-3 bg-emerald-50 rounded-lg text-emerald-700 flex justify-between items-center">
+    <div>
+      <strong>Mesas unidas:</strong>
+      {{ $mesas->where('combinada', 1)->pluck('numero')->join(', ') }}
+    </div>
+
+    <form action="{{ route('mesas.separar') }}" method="POST" onsubmit="return confirm('¿Deseas separar las mesas unidas?')">
+      @csrf
+      <button type="submit"
+        class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-red-700 transition">
+        Separar mesas
+      </button>
+    </form>
+  </div>
+@endif
+
 {{-- === GRID DE MESAS === --}}
 <div class="mt-6 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
   @forelse($mesas as $mesa)
@@ -26,11 +44,16 @@
       $color = $colores[$mesa->estado] ?? 'bg-slate-100 text-slate-700 hover:bg-slate-200';
     @endphp
 
-    <a href="{{ route('pedidos.create', ['mesa_id' => $mesa->id]) }}"
-      class="flex flex-col items-center justify-center rounded-lg {{ $color }} p-3 text-center text-xs font-semibold shadow-sm transition-all hover:scale-105">
+    <div class="relative flex flex-col items-center justify-center rounded-lg {{ $color }} p-3 text-center text-xs font-semibold shadow-sm transition-all hover:scale-105">
       <span class="text-sm font-bold">Mesa {{ $mesa->numero }}</span>
-      <span class="text-[10px]">{{ ucfirst($mesa->estado) }}</span>
-    </a>
+      <span class="text-[10px] mb-1">{{ ucfirst($mesa->estado) }}</span>
+
+      @if($mesa->combinada)
+        <span class="text-[10px] text-emerald-700 font-medium">Unida con {{ $mesa->combinada_con }}</span>
+      @else
+        <a href="{{ route('pedidos.create', ['mesa_id' => $mesa->id]) }}" class="text-[10px] text-emerald-700 underline hover:text-emerald-900 mt-1">Abrir pedido</a>
+      @endif
+    </div>
   @empty
     <p class="text-sm text-slate-500 col-span-full text-center">No hay mesas registradas todavía.</p>
   @endforelse

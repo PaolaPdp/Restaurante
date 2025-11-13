@@ -128,11 +128,15 @@ class PedidoController extends Controller
     }
 
     public function show(Pedido $pedido)
-    {
-        $pedido->load(['mesa', 'mozo', 'detalles.producto', 'venta']);
+{
+    $pedido->load(['mesa', 'mozo', 'detalles.producto', 'venta']);
 
-        return view('pedidos.show', compact('pedido'));
-    }
+    // 🔹 Agregamos todas las mesas para el modal "Cambiar mesa"
+    $mesas = \App\Models\Mesa::orderBy('numero')->get();
+
+    return view('pedidos.show', compact('pedido', 'mesas'));
+}
+
 
     public function enviarACocina(Pedido $pedido)
     {
@@ -212,4 +216,43 @@ class PedidoController extends Controller
             abort(403);
         }
     }
+     public function cambiarMesa(Request $request, $pedidoId)
+{
+    $request->validate([
+        'nueva_mesa_id' => 'required|exists:mesas,id',
+    ]);
+
+    $pedido = \App\Models\Pedido::findOrFail($pedidoId);
+
+    $mesaAnterior = $pedido->mesa;
+    $nuevaMesa = \App\Models\Mesa::findOrFail($request->nueva_mesa_id);
+
+    // Validar que la nueva mesa esté libre
+    if ($nuevaMesa->estado !== 'libre') {
+        return back()->with('error', 'La mesa seleccionada no está disponible.');
+    }
+
+    // 🔹 Cambiar la relación del pedido
+    $pedido->mesa_id = $nuevaMesa->id;
+    $pedido->save();
+
+    // 🔹 Registrar observaciones en ambas mesas
+    $fecha = now()->format('d/m/Y H:i');
+    $mensaje = "El pedido de la mesa {$mesaAnterior->numero} se ha movido a la mesa {$nuevaMesa->numero} el {$fecha}.";
+
+    $mesaAnterior->update([
+        'estado' => 'libre',
+        'observaciones' => $mensaje,
+    ]);
+
+    $nuevaMesa->update([
+        'estado' => 'ocupada',
+        'observaciones' => $mensaje,
+    ]);
+
+    return back()->with('success', "El pedido se ha movido a la Mesa {$nuevaMesa->numero}.");
+}
+
+
+
 }
