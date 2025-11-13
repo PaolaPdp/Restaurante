@@ -9,7 +9,7 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $productos = Producto::orderByRaw("FIELD(categoria, 'entrada','menu','extra','bebida')")
+        $productos = Producto::orderByRaw("FIELD(categoria, 'entrada','menu','extra','bebida','ejecutivo')")
             ->orderBy('nombre')
             ->paginate(20);
 
@@ -34,7 +34,7 @@ class ProductController extends Controller
         $validated = $request->validate([
             'nombre' => 'required|string|max:255',
             'precio' => 'required|numeric|min:0',
-            'categoria' => 'required|in:entrada,menu,extra,bebida',
+            'categoria' => 'required|in:entrada,menu,extra,bebida,ejecutivo',
             'descripcion' => 'nullable|string|max:1000',
             'requiere_cocina' => 'nullable|boolean',
             'estado' => 'nullable|in:activo,inactivo',

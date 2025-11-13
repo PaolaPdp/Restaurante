@@ -44,6 +44,7 @@
                         'menu' => 'Menú',
                         'extra' => 'Extras',
                         'bebida' => 'Bebidas',
+                        'ejecutivo' => 'ejecutivo'
                     ][$categoria->categoria] ?? ucfirst($categoria->categoria);
                 @endphp
                 <div class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-600">
@@ -75,6 +76,7 @@
                 <option value="menu">Menú</option>
                 <option value="extra">Extra</option>
                 <option value="bebida">Bebida</option>
+                <option value="ejecutivo">Ejecutivo</option>
             </select>
         </div>
         <div>
