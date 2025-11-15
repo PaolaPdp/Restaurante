@@ -108,6 +108,7 @@
                         <th class="px-3 py-2 text-right">Precio</th>
                         <th class="px-3 py-2 text-left">Estado</th>
                         <th class="px-3 py-2 text-left">Actualización</th>
+                        <th class="px-3 py-2 text-left">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -123,10 +124,20 @@
                                 <span class="rounded-full px-2 py-1 text-xs font-semibold {{ $producto->estado === 'activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600' }}">{{ ucfirst($producto->estado) }}</span>
                             </td>
                             <td class="px-3 py-2 text-slate-500 text-xs">{{ $producto->updated_at?->format('d/m/Y H:i') ?? '—' }}</td>
+                            <td class="px-3 py-2">
+                                <div class="flex items-center gap-2">
+                                    <a href="{{ route('productos.edit', $producto) }}" class="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200">Editar</a>
+                                    <form action="{{ route('productos.destroy', $producto) }}" method="POST" onsubmit="return confirm('¿Eliminar producto?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="rounded-md bg-rose-600 px-2 py-1 text-xs font-semibold text-white hover:bg-rose-700">Eliminar</button>
+                                    </form>
+                                </div>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-3 py-6 text-center text-sm text-slate-500">No hay productos registrados.</td>
+                            <td colspan="6" class="px-3 py-6 text-center text-sm text-slate-500">No hay productos registrados.</td>
                         </tr>
                     @endforelse
                 </tbody>

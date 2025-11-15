@@ -29,6 +29,11 @@ class ProductController extends Controller
         return view('productos.index', compact('productos', 'stats', 'categorias'));
     }
 
+    public function create()
+    {
+        return view('productos.create');
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -46,5 +51,40 @@ class ProductController extends Controller
         Producto::create($validated);
 
         return redirect()->route('productos.index')->with('success', 'Producto agregado correctamente.');
+    }
+
+    public function show(Producto $producto)
+    {
+        return view('productos.show', compact('producto'));
+    }
+
+    public function edit(Producto $producto)
+    {
+        return view('productos.edit', compact('producto'));
+    }
+
+    public function update(Request $request, Producto $producto)
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:255',
+            'precio' => 'required|numeric|min:0',
+            'categoria' => 'required|in:entrada,menu,extra,bebida,ejecutivo',
+            'descripcion' => 'nullable|string|max:1000',
+            'requiere_cocina' => 'nullable|boolean',
+            'estado' => 'nullable|in:activo,inactivo',
+        ]);
+
+        $validated['requiere_cocina'] = $request->boolean('requiere_cocina');
+        $validated['estado'] = $validated['estado'] ?? $producto->estado;
+
+        $producto->update($validated);
+
+        return redirect()->route('productos.index')->with('success', 'Producto actualizado correctamente.');
+    }
+
+    public function destroy(Producto $producto)
+    {
+        $producto->delete();
+        return redirect()->route('productos.index')->with('success', 'Producto eliminado correctamente.');
     }
 }
