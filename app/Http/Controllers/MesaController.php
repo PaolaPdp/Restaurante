@@ -19,6 +19,8 @@ class MesaController extends Controller
         $mesas = Mesa::with(['pedidos' => fn ($query) => $query->abiertos()->latest()])
             ->orderBy('numero')
             ->get();
+            $mesas = Mesa::query()->orderBy('numero')->get();
+
 
         $stats = [
             'total' => Mesa::count(),
@@ -79,61 +81,37 @@ class MesaController extends Controller
 
     public function unir(Request $request)
 {
-    $mesasIds = $request->input('mesas', []);
+  $mesasIds = $request->mesas;
 
     if (count($mesasIds) < 2) {
-        return back()->with('error', 'Debes seleccionar al menos dos mesas para unir.');
+        return back()->with('error', 'Debes seleccionar al menos dos mesas.');
     }
 
-    // Obtener las mesas seleccionadas
-    $mesas = Mesa::whereIn('id', $mesasIds)->get();
+    // Generar un grupo único
+    $grupo = time(); // o random_int(1000, 9999)
 
-    // Tomamos la primera como principal
-    $mesaPrincipal = $mesas->first();
-    $otrasMesas = $mesas->where('id', '!=', $mesaPrincipal->id)->pluck('numero')->toArray();
-
-    // Actualizar todas las mesas seleccionadas como combinadas
-    foreach ($mesas as $mesa) {
-        $mesa->update([
+    foreach ($mesasIds as $mesaId) {
+        Mesa::where('id', $mesaId)->update([
             'combinada' => true,
-            'combinada_con' => implode(',', $mesas->pluck('numero')->toArray()), // Ej: "8,9"
+            'combinada_grupo' => $grupo,
             'estado' => 'ocupada',
         ]);
     }
 
-    // Registrar observación en la principal
-    $mesaPrincipal->update([
-        'observaciones' => 'Mesa ' . $mesaPrincipal->numero . ' unida con mesas ' . implode(', ', $otrasMesas),
-    ]);
-
-    return back()->with('success', 'Las mesas se unieron correctamente.');
+    return back()->with('success', 'Mesas unidas correctamente.');
 }
 
-
-
-
-
-    public function separar(Request $request)
+    public function separar($grupo)
 {
-    $mesaId = $request->input('mesa_id');
-    $mesaCombinada = Mesa::find($mesaId);
-
-    if (!$mesaCombinada || !$mesaCombinada->combinada) {
-        return back()->with('error', 'No se encontró la mesa combinada.');
-    }
-
-    $mesasOriginales = json_decode($mesaCombinada->mesas_unidas, true);
-
-    // Liberar las originales
-    Mesa::whereIn('id', $mesasOriginales)->update([
+    Mesa::where('combinada_grupo', $grupo)->update([
+        'combinada' => false,
+        'combinada_grupo' => null,
         'estado' => 'libre',
     ]);
 
-    // Eliminar la mesa combinada
-    $mesaCombinada->delete();
-
-    return back()->with('success', 'Las mesas se han separado correctamente.');
+    return back()->with('success', 'Mesas separadas correctamente.');
 }
+
 
 
 }

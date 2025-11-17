@@ -12,6 +12,8 @@ class Mesa extends Model
         'capacidad',
         'estado',
         'observaciones',
+        'combinada',
+        'combinada_grupo'
     ];
 
     public const ESTADO_LIBRE = 'libre';
