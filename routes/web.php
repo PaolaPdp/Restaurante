@@ -28,17 +28,9 @@ Route::middleware(['auth'])->group(function () {
 		Route::post('/mesas', [MesaController::class, 'store'])->name('mesas.store');
 		Route::patch('mesas/{mesa}/estado', [MesaController::class, 'asignarEstado'])->name('mesas.estado');
 		Route::post('mesas/{mesa}/liberar', [MesaController::class, 'liberar'])->name('mesas.liberar');
-
-		Route::post('/mesas/unir', [\App\Http\Controllers\MesaController::class, 'unir'])->name('mesas.unir');
-
 		Route::post('/mesas/unir', [MesaController::class, 'unir'])->name('mesas.unir');
-
-
-		Route::post('/mesas/separar', [MesaController::class, 'separar'])->name('mesas.separar');
-	
-
-
-
+		Route::post('/mesas/separar/{grupo}', [MesaController::class, 'separar'])
+    ->name('mesas.separar');
 
 	});
 
