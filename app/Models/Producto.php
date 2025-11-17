@@ -26,6 +26,7 @@ class Producto extends Model
     public const CATEGORIA_MENU = 'menu';
     public const CATEGORIA_EXTRA = 'extra';
     public const CATEGORIA_BEBIDA = 'bebida';
+    public const CATEGORIA_EJECUTIVO = 'ejecutivo';
 
     public function scopeActivos($query)
     {
