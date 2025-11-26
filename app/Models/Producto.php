@@ -32,4 +32,10 @@ class Producto extends Model
     {
         return $query->where('estado', 'activo');
     }
+
+    public function categoria()
+{
+    return $this->belongsTo(\App\Models\Categoria::class, 'categoria_id');
+}
+
 }

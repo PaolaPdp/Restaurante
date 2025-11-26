@@ -87,4 +87,15 @@ class ProductController extends Controller
         $producto->delete();
         return redirect()->route('productos.index')->with('success', 'Producto eliminado correctamente.');
     }
+
+    public function obtenerPorCategoria($categoria)
+{
+    $productos = Producto::where('categoria', $categoria)->get();
+
+    // DEVOLVER JSON — NO VISTA
+    return response()->json($productos);
+}
+
+
+
 }

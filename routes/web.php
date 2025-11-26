@@ -63,8 +63,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware('role:admin')->group(function () {
         Route::resource('productos', ProductController::class)->only(['index', 'store']);
-        Route::resource('productos', ProductController::class);
+        Route::resource('productos', ProductController::class);        
     });
+
+    
+    Route::get('/productos/por-categoria/{categoria}', [ProductController::class, 'obtenerPorCategoria']);
+
 
     Route::middleware('role:admin,caja')->group(function () {
         Route::get('ventas', [VentaController::class, 'index'])->name('ventas.index');
