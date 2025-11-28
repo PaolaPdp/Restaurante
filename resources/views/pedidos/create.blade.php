@@ -12,6 +12,10 @@
     {{-- BOTONES DE FILTRO --}}
     <div class="flex gap-3 mb-4">
 
+        <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="entrada">
+            ENTRADA
+        </button>
+
         <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="menu">
             MENU
         </button>
@@ -20,11 +24,11 @@
             EXTRA
         </button>
 
-        <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="bebidas">
+        <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="bebida">
             BEBIDAS
         </button>
 
-        <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="ejecutivos">
+        <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="ejecutivo">
             EJECUTIVOS
         </button>
 
