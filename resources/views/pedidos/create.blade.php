@@ -1,6 +1,5 @@
 @extends('layouts.app')
 
-
 @section('content')
 
 <div class="p-4">
@@ -11,53 +10,55 @@
 
     <div class="grid grid-cols-3 gap-4">
 
-    {{-- PANEL IZQUIERDO: DETALLE DEL PEDIDO --}}
-    <div class="col-span-1 bg-white p-4 rounded shadow">
+        {{-- PANEL IZQUIERDO: DETALLE DEL PEDIDO --}}
+        <div class="col-span-1 bg-white p-4 rounded shadow">
 
-        <h3 class="text-lg font-bold mb-3">Detalle del Pedido</h3>
+            <h3 class="text-lg font-bold mb-3">Detalle del Pedido</h3>
 
-        <div id="detallePedido">
-            <p class="text-gray-500">No hay productos agregados.</p>
+            <div id="detallePedido">
+                <p class="text-gray-500">No hay productos agregados.</p>
+            </div>
+
+            <form id="pedidoForm" method="POST" action="{{ route('pedidos.store') }}">
+                @csrf
+                <input type="hidden" name="mesa_id" value="{{ $mesa->id }}">
+
+                <div id="inputsItems"></div>
+
+                <button type="submit" class="mt-4 w-full bg-green-600 text-white p-3 rounded-lg">
+                    Confirmar Pedido
+                </button>
+            </form>
+
+        </div>
+
+        {{-- PANEL DERECHO: CATEGORÍAS Y PRODUCTOS --}}
+        <div class="col-span-2">
+
+            {{-- BOTONES DE FILTRO --}}
+            <div class="flex gap-3 mb-4">
+
+                <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="entrada">ENTRADA</button>
+                <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="menu">MENU</button>
+                <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="extra">EXTRA</button>
+                <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="bebida">BEBIDAS</button>
+                <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="ejecutivo">EJECUTIVOS</button>
+
+            </div>
+
+            {{-- CONTENEDOR DE PRODUCTOS --}}
+            <div id="productosContainer" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <p class="text-gray-500">Seleccione una categoría.</p>
+            </div>
+
         </div>
 
     </div>
-
-    {{-- PANEL DERECHO: CATEGORÍAS Y PRODUCTOS --}}
-    <div class="col-span-2">
-
-
-    {{-- BOTONES DE FILTRO --}}
-    <div class="flex gap-3 mb-4">
-
-        <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="entrada">
-            ENTRADA
-        </button>
-
-        <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="menu">
-            MENU
-        </button>
-
-        <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="extra">
-            EXTRA
-        </button>
-
-        <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="bebida">
-            BEBIDAS
-        </button>
-
-        <button class="tab-btn bg-gray-200 px-4 py-2 rounded" data-cat="ejecutivo">
-            EJECUTIVOS
-        </button>
-
-    </div>
-
-    {{-- CONTENEDOR DE PRODUCTOS --}}
-    <div id="productosContainer" class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <p class="text-gray-500">Seleccione una categoría.</p>
-    </div>
-
 </div>
 
+{{-- =========================== --}}
+{{--         JAVASCRIPT         --}}
+{{-- =========================== --}}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -69,11 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const categoria = btn.dataset.cat;
 
-            // MARCAR BOTÓN SELECCIONADO
             botones.forEach(b => b.classList.remove('bg-emerald-500', 'text-white'));
             btn.classList.add('bg-emerald-500', 'text-white');
 
-            // CARGAR DATOS POR AJAX
             fetch(`/productos/por-categoria/${categoria}`)
                 .then(res => res.json())
                 .then(data => {
@@ -86,26 +85,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     data.forEach(prod => {
-    contenedor.innerHTML += `
-        <div class="p-3 border rounded shadow bg-white cursor-pointer producto-item"
-             data-id="${prod.id}" 
-             data-nombre="${prod.nombre}"
-             data-precio="${prod.precio}">
-             
-            <h3 class="font-bold">${prod.nombre}</h3>
-            <p class="text-sm text-gray-600">S/. ${prod.precio}</p>
-        </div>
-    `;
-});
-
-                    // data.forEach(prod => {
-                    //     contenedor.innerHTML += `
-                    //         <div class="p-3 border rounded shadow bg-white">
-                    //             <h3 class="font-bold">${prod.nombre}</h3>
-                    //             <p class="text-sm text-gray-600">S/. ${prod.precio}</p>
-                    //         </div>
-                    //     `;
-                    // });
+                        contenedor.innerHTML += `
+                            <div class="p-3 border rounded shadow bg-white cursor-pointer producto-item"
+                                data-id="${prod.id}" 
+                                data-nombre="${prod.nombre}"
+                                data-precio="${prod.precio}">
+                                
+                                <h3 class="font-bold">${prod.nombre}</h3>
+                                <p class="text-sm text-gray-600">S/. ${prod.precio}</p>
+                            </div>
+                        `;
+                    });
 
                 });
 
@@ -114,7 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-// CARRITO TEMPORAL
 let detalle = {};
 
 // CLICK EN PRODUCTO
@@ -136,7 +125,24 @@ document.addEventListener('click', function(e) {
     renderDetalle();
 });
 
-// RENDERIZAR DETALLE
+// ENVIAR AL BACKEND
+document.getElementById('pedidoForm').addEventListener('submit', function () {
+    const inputsContainer = document.getElementById('inputsItems');
+    inputsContainer.innerHTML = '';
+
+    Object.keys(detalle).forEach(productoId => {
+        const cantidad = detalle[productoId].cantidad;
+
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = `items[${productoId}]`;
+        input.value = cantidad;
+
+        inputsContainer.appendChild(input);
+    });
+});
+
+// DIBUJAR DETALLE
 function renderDetalle() {
     const cont = document.getElementById('detallePedido');
     cont.innerHTML = '';
@@ -186,11 +192,6 @@ document.addEventListener('click', function(e) {
         renderDetalle();
     }
 });
-
-
 </script>
-
-    </div> {{-- FIN PANEL DERECHO --}}
-</div> {{-- FIN GRID --}}
 
 @endsection
