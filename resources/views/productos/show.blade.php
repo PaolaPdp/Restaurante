@@ -17,7 +17,7 @@
     <dl class="mt-4 space-y-2 text-sm">
       <div class="flex justify-between">
         <dt class="text-slate-500">Categoría</dt>
-        <dd class="font-medium capitalize text-slate-700">{{ $producto->categoria }}</dd>
+        <dd class="font-medium text-slate-700">{{ $categoriasDisponibles[$producto->categoria] ?? ucfirst($producto->categoria) }}</dd>
       </div>
       <div class="flex justify-between">
         <dt class="text-slate-500">Precio</dt>
@@ -29,7 +29,7 @@
       </div>
       <div class="flex justify-between">
         <dt class="text-slate-500">Estado</dt>
-        <dd class="font-medium text-slate-700">{{ ucfirst($producto->estado) }}</dd>
+        <dd class="font-medium text-slate-700">{{ $estadosDisponibles[$producto->estado] ?? ucfirst($producto->estado) }}</dd>
       </div>
       <div class="flex justify-between">
         <dt class="text-slate-500">Actualizado</dt>

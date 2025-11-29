@@ -27,10 +27,41 @@ class Producto extends Model
     public const CATEGORIA_EXTRA = 'extra';
     public const CATEGORIA_BEBIDA = 'bebida';
     public const CATEGORIA_EJECUTIVO = 'ejecutivo';
+    public const ESTADO_ACTIVO = 'activo';
+    public const ESTADO_INACTIVO = 'inactivo';
 
     public function scopeActivos($query)
     {
         return $query->where('estado', 'activo');
+    }
+
+    public static function categoriasDisponibles(): array
+    {
+        return [
+            self::CATEGORIA_ENTRADA => 'Entrada',
+            self::CATEGORIA_MENU => 'Menú',
+            self::CATEGORIA_EXTRA => 'Extra',
+            self::CATEGORIA_BEBIDA => 'Bebida',
+            self::CATEGORIA_EJECUTIVO => 'Ejecutivo',
+        ];
+    }
+
+    public static function categoriaLabel(string $categoria): string
+    {
+        return self::categoriasDisponibles()[$categoria] ?? ucfirst($categoria);
+    }
+
+    public static function estadosDisponibles(): array
+    {
+        return [
+            self::ESTADO_ACTIVO => 'Activo',
+            self::ESTADO_INACTIVO => 'Inactivo',
+        ];
+    }
+
+    public static function estadoLabel(string $estado): string
+    {
+        return self::estadosDisponibles()[$estado] ?? ucfirst($estado);
     }
 
     public function categoria()

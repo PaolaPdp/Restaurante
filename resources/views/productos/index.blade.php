@@ -33,22 +33,44 @@
     </article>
 </div>
 
+<div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <form method="GET" action="{{ route('productos.index') }}" class="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <div class="md:col-span-2">
+            <label for="buscar" class="text-xs font-semibold uppercase tracking-widest text-slate-500">Buscar</label>
+            <input id="buscar" type="search" name="buscar" value="{{ $filters['buscar'] ?? '' }}" placeholder="Nombre o descripción" class="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-emerald-300">
+        </div>
+        <div>
+            <label for="categoria" class="text-xs font-semibold uppercase tracking-widest text-slate-500">Categoría</label>
+            <select id="categoria" name="categoria" class="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-emerald-300">
+                <option value="">Todas</option>
+                @foreach($categoriasDisponibles as $clave => $label)
+                    <option value="{{ $clave }}" @selected(($filters['categoria'] ?? '') === $clave)>{{ $label }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label for="estado" class="text-xs font-semibold uppercase tracking-widest text-slate-500">Estado</label>
+            <select id="estado" name="estado" class="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-emerald-300">
+                <option value="">Todos</option>
+                @foreach($estadosDisponibles as $clave => $label)
+                    <option value="{{ $clave }}" @selected(($filters['estado'] ?? '') === $clave)>{{ $label }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="flex items-end gap-2">
+            <button class="flex-1 rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">Filtrar</button>
+            <a href="{{ route('productos.index') }}" class="rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-800">Limpiar</a>
+        </div>
+    </form>
+</div>
+
 @if($categorias->isNotEmpty())
     <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 class="text-sm font-semibold uppercase tracking-[0.25em] text-slate-400">Distribución por categoría</h2>
         <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             @foreach($categorias as $categoria)
-                @php
-                    $label = [
-                        'entrada' => 'Entradas',
-                        'menu' => 'Menú',
-                        'extra' => 'Extras',
-                        'bebida' => 'Bebidas',
-                        'ejecutivo' => 'ejecutivo'
-                    ][$categoria->categoria] ?? ucfirst($categoria->categoria);
-                @endphp
                 <div class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                    <span class="font-semibold text-slate-700">{{ $label }}</span>
+                    <span class="font-semibold text-slate-700">{{ $categoriasDisponibles[$categoria->categoria] ?? ucfirst($categoria->categoria) }}</span>
                     <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">{{ $categoria->total }}</span>
                 </div>
             @endforeach
@@ -70,13 +92,12 @@
         </div>
         <div>
             <label class="text-sm font-medium text-slate-600">Categoría</label>
+            @php($categoriaSeleccionada = old('categoria'))
             <select name="categoria" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-emerald-300" required>
                 <option value="">Selecciona</option>
-                <option value="entrada">Entrada</option>
-                <option value="menu">Menú</option>
-                <option value="extra">Extra</option>
-                <option value="bebida">Bebida</option>
-                <option value="ejecutivo">Ejecutivo</option>
+                @foreach($categoriasDisponibles as $clave => $label)
+                    <option value="{{ $clave }}" @selected($categoriaSeleccionada === $clave)>{{ $label }}</option>
+                @endforeach
             </select>
         </div>
         <div>
@@ -89,9 +110,11 @@
         </div>
         <div>
             <label class="text-sm font-medium text-slate-600">Estado</label>
+            @php($estadoCreacion = old('estado', \App\Models\Producto::ESTADO_ACTIVO))
             <select name="estado" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-emerald-300">
-                <option value="activo" selected>Activo</option>
-                <option value="inactivo">Inactivo</option>
+                @foreach($estadosDisponibles as $clave => $label)
+                    <option value="{{ $clave }}" @selected($estadoCreacion === $clave)>{{ $label }}</option>
+                @endforeach
             </select>
         </div>
         <button class="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">Guardar</button>
@@ -118,10 +141,11 @@
                                 <p class="font-semibold text-slate-700">{{ $producto->nombre }}</p>
                                 <p class="text-xs text-slate-400">{{ $producto->descripcion ?: 'Sin descripción' }}</p>
                             </td>
-                            <td class="px-3 py-2 text-slate-500 capitalize">{{ $producto->categoria }}</td>
+                            <td class="px-3 py-2 text-slate-500">{{ $categoriasDisponibles[$producto->categoria] ?? ucfirst($producto->categoria) }}</td>
                             <td class="px-3 py-2 text-right font-semibold text-slate-700">S/ {{ number_format($producto->precio, 2) }}</td>
                             <td class="px-3 py-2">
-                                <span class="rounded-full px-2 py-1 text-xs font-semibold {{ $producto->estado === 'activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600' }}">{{ ucfirst($producto->estado) }}</span>
+                                @php($esActivo = $producto->estado === \App\Models\Producto::ESTADO_ACTIVO)
+                                <span class="rounded-full px-2 py-1 text-xs font-semibold {{ $esActivo ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600' }}">{{ $estadosDisponibles[$producto->estado] ?? ucfirst($producto->estado) }}</span>
                             </td>
                             <td class="px-3 py-2 text-slate-500 text-xs">{{ $producto->updated_at?->format('d/m/Y H:i') ?? '—' }}</td>
                             <td class="px-3 py-2">

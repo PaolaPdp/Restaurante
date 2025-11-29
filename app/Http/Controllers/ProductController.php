@@ -7,17 +7,34 @@ use App\Models\Producto;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $productos = Producto::orderByRaw("FIELD(categoria, 'entrada','menu','extra','bebida','ejecutivo')")
+        $filters = $request->validate([
+            'buscar' => 'nullable|string|max:255',
+            'categoria' => 'nullable|in:entrada,menu,extra,bebida,ejecutivo',
+            'estado' => 'nullable|in:activo,inactivo',
+        ]);
+
+        $productos = Producto::query()
+            ->when($filters['categoria'] ?? null, fn ($query, $categoria) => $query->where('categoria', $categoria))
+            ->when($filters['estado'] ?? null, fn ($query, $estado) => $query->where('estado', $estado))
+            ->when($filters['buscar'] ?? null, function ($query, $term) {
+                $limpio = trim($term);
+                $query->where(function ($subQuery) use ($limpio) {
+                    $subQuery->where('nombre', 'like', "%{$limpio}%")
+                        ->orWhere('descripcion', 'like', "%{$limpio}%");
+                });
+            })
+            ->orderByRaw("FIELD(categoria, 'entrada','menu','extra','bebida','ejecutivo')")
             ->orderBy('nombre')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
         $stats = [
             'total' => Producto::count(),
-            'activos' => Producto::where('estado', 'activo')->count(),
+            'activos' => Producto::where('estado', Producto::ESTADO_ACTIVO)->count(),
             'requiere_cocina' => Producto::where('requiere_cocina', true)->count(),
-            'inactivos' => Producto::where('estado', 'inactivo')->count(),
+            'inactivos' => Producto::where('estado', Producto::ESTADO_INACTIVO)->count(),
         ];
 
         $categorias = Producto::select('categoria')
@@ -26,12 +43,22 @@ class ProductController extends Controller
             ->orderBy('categoria')
             ->get();
 
-        return view('productos.index', compact('productos', 'stats', 'categorias'));
+        return view('productos.index', [
+            'productos' => $productos,
+            'stats' => $stats,
+            'categorias' => $categorias,
+            'filters' => $filters,
+            'categoriasDisponibles' => Producto::categoriasDisponibles(),
+            'estadosDisponibles' => Producto::estadosDisponibles(),
+        ]);
     }
 
     public function create()
     {
-        return view('productos.create');
+        return view('productos.create', [
+            'categoriasDisponibles' => Producto::categoriasDisponibles(),
+            'estadosDisponibles' => Producto::estadosDisponibles(),
+        ]);
     }
 
     public function store(Request $request)
@@ -55,12 +82,20 @@ class ProductController extends Controller
 
     public function show(Producto $producto)
     {
-        return view('productos.show', compact('producto'));
+        return view('productos.show', [
+            'producto' => $producto,
+            'categoriasDisponibles' => Producto::categoriasDisponibles(),
+            'estadosDisponibles' => Producto::estadosDisponibles(),
+        ]);
     }
 
     public function edit(Producto $producto)
     {
-        return view('productos.edit', compact('producto'));
+        return view('productos.edit', [
+            'producto' => $producto,
+            'categoriasDisponibles' => Producto::categoriasDisponibles(),
+            'estadosDisponibles' => Producto::estadosDisponibles(),
+        ]);
     }
 
     public function update(Request $request, Producto $producto)
@@ -89,13 +124,10 @@ class ProductController extends Controller
     }
 
     public function obtenerPorCategoria($categoria)
-{
-    $productos = Producto::where('categoria', $categoria)->get();
+    {
+        $productos = Producto::where('categoria', $categoria)->get();
 
-    // DEVOLVER JSON — NO VISTA
-    return response()->json($productos);
-}
-
-
-
+        // DEVUELVE JSON PARA CONSULTAS DINÁMICAS
+        return response()->json($productos);
+    }
 }

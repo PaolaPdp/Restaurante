@@ -25,13 +25,11 @@
 
     <div>
       <label class="text-sm font-medium text-slate-600">Categoría</label>
+      @php($categoriaActual = old('categoria', $producto->categoria))
       <select name="categoria" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-emerald-300" required>
-        @php($categoriaActual = old('categoria', $producto->categoria))
-        <option value="entrada" {{ $categoriaActual==='entrada' ? 'selected' : '' }}>Entrada</option>
-        <option value="menu" {{ $categoriaActual==='menu' ? 'selected' : '' }}>Menú</option>
-        <option value="extra" {{ $categoriaActual==='extra' ? 'selected' : '' }}>Extra</option>
-        <option value="bebida" {{ $categoriaActual==='bebida' ? 'selected' : '' }}>Bebida</option>
-        <option value="ejecutivo" {{ $categoriaActual==='ejecutivo' ? 'selected' : '' }}>Ejecutivo</option>
+        @foreach($categoriasDisponibles as $clave => $label)
+          <option value="{{ $clave }}" @selected($categoriaActual===$clave)>{{ $label }}</option>
+        @endforeach
       </select>
     </div>
 
@@ -49,8 +47,9 @@
       <label class="text-sm font-medium text-slate-600">Estado</label>
       @php($estadoActual = old('estado', $producto->estado))
       <select name="estado" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-emerald-300">
-        <option value="activo" {{ $estadoActual==='activo' ? 'selected' : '' }}>Activo</option>
-        <option value="inactivo" {{ $estadoActual==='inactivo' ? 'selected' : '' }}>Inactivo</option>
+        @foreach($estadosDisponibles as $clave => $label)
+          <option value="{{ $clave }}" @selected($estadoActual===$clave)>{{ $label }}</option>
+        @endforeach
       </select>
     </div>
 
