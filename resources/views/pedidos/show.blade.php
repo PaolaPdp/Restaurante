@@ -41,30 +41,45 @@
 
   <div class="mt-4 overflow-x-auto">
   <table class="min-w-full divide-y divide-slate-200 text-sm">
-        <thead class="bg-slate-50 text-xs uppercase text-slate-500">
-          <tr>
-            <th class="px-3 py-2 text-left">Producto</th>
-            <th class="px-3 py-2 text-center">Cant.</th>
-            <th class="px-3 py-2 text-right">Precio</th>
-            <th class="px-3 py-2 text-right">Subtotal</th>
-            <th class="px-3 py-2 text-right">Estado</th>
-          </tr>
-        </thead>
+       
         <tbody class="divide-y divide-slate-100">
-          @foreach($pedido->detalles as $detalle)
-            <tr>
-              <td class="px-3 py-2 text-slate-700">{{ $detalle->producto->nombre ?? 'Producto eliminado' }}</td>
-              <td class="px-3 py-2 text-center text-slate-500">{{ $detalle->cantidad }}</td>
-              <td class="px-3 py-2 text-right text-slate-500">S/ {{ number_format($detalle->precio_unitario, 2) }}</td>
-              <td class="px-3 py-2 text-right font-semibold text-slate-700">S/ {{ number_format($detalle->subtotal, 2) }}</td>
-              <td class="px-3 py-2 text-right text-xs uppercase text-slate-400">{{ str_replace('_', ' ', $detalle->estado) }}</td>
-            </tr>
-          @endforeach
-        </tbody>
+    @foreach($pedido->detalles as $detalle)
+        <tr>
+            <td class="px-3 py-2 text-slate-700">
+
+                {{-- Nombre --}}
+                {{ $detalle->producto->nombre ?? 'Producto eliminado' }}
+
+                {{-- Comentario con icono --}}
+                @if($detalle->comentario)
+                    <div class="mt-1 text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded flex items-center gap-1">
+                        <i class="fa-solid fa-message"></i>
+                        {{ $detalle->comentario }}
+                    </div>
+                @endif
+
+                {{-- Notas --}}
+                @if($detalle->nota_cocina)
+                    <p class="text-xs text-blue-600 mt-1">
+                        📝 {{ $detalle->nota_cocina }}
+                    </p>
+                @endif
+
+            </td>
+
+            <td class="px-3 py-2 text-center text-slate-500">{{ $detalle->cantidad }}</td>
+            <td class="px-3 py-2 text-right text-slate-500">S/ {{ number_format($detalle->precio_unitario, 2) }}</td>
+            <td class="px-3 py-2 text-right font-semibold text-slate-700">S/ {{ number_format($detalle->subtotal, 2) }}</td>
+            <td class="px-3 py-2 text-right text-xs uppercase text-slate-400">{{ str_replace('_', ' ', $detalle->estado) }}</td>
+        </tr>
+    @endforeach
+</tbody>
+
+
   </table>
   </div>
-      @if($pedido->notas)
-        <p class="mt-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">Notas: {{ $pedido->notas }}</p>
+      @if($pedido->nota_cocina)
+        <p class="mt-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">nota_cocina: {{ $pedido->nota_cocina }}</p>
       @endif
     </article>
 
@@ -182,6 +197,46 @@
         <p class="text-sm text-lime-700">Tipo pago: {{ ucfirst($pedido->venta->tipo_pago) }}</p>
       </article>
     @endif
+
+    @if($pedido->mesas_unidas) 
+    <p><strong>Mesas unidas:</strong> 
+        {{ implode(', ', json_decode($pedido->mesas_unidas, true)) }}
+    </p>
+@else
+    {{-- SI ES PEDIDO DE MESAS UNIDAS --}}
+@if($pedido->mesas_unidas)
+    @php
+        // Convertimos JSON a array de IDs
+        $ids = json_decode($pedido->mesas_unidas, true);
+
+        // Obtenemos los números de mesa
+        $nombresMesas = \App\Models\Mesa::whereIn('id', $ids)->pluck('numero')->toArray();
+    @endphp
+
+    <p>
+        <strong>Mesas unidas:</strong> {{ implode(', ', $nombresMesas) }}
+    </p>
+
+{{-- SI ES PEDIDO DE UNA MESA NORMAL --}}
+@elseif($pedido->mesa)
+    <p>
+        <strong>Mesa:</strong> {{ $pedido->mesa->numero }}
+    </p>
+
+{{-- SI NO HAY NADA --}}
+@else
+    <p><strong>Mesa:</strong> -</p>
+@endif
+
+@endif
+
+
+
+
+    {{-- @if($pedido->mesas_unidas)
+    <p><strong>Mesas Unidas:</strong> {{ implode(', ', json_decode($pedido->mesas_unidas)) }}</p>
+@endif --}}
+
   </aside>
 </div>
 @endsection

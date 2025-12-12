@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Iniciar sesión | Restaurante</title>
     <!-- <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css" rel="stylesheet"> -->
-     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+ 
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-100 via-white to-slate-100 font-sans text-slate-800">
     <div class="relative w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl">

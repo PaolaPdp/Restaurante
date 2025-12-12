@@ -43,89 +43,135 @@ class PedidoController extends Controller
     }
 
     public function create(Request $request)
-    {
-        $mesaId = $request->input('mesa_id');
-        $mesa = $mesaId ? Mesa::findOrFail($mesaId) : null;
+{
+    $grupo = $request->grupo;
+    $mesa_id = $request->mesa_id;
 
-        $productos = Producto::activos()
-            ->orderByRaw("FIELD(categoria, 'entrada','menu','extra','bebida')")
-            ->orderBy('nombre')
-            ->get()
-            ->groupBy('categoria');
+    // Si es un pedido por grupo, NO hay mesa individual
+    $mesa = null;
 
-        $mesas = Mesa::orderBy('numero')->get();
-
-        return view('pedidos.create', compact('productos', 'mesa', 'mesas'));
+    if ($mesa_id) { 
+        $mesa = \App\Models\Mesa::find($mesa_id);
     }
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'mesa_id' => ['required', 'exists:mesas,id'],
-            'items' => ['required', 'array'],
-            'items.*' => ['nullable', 'integer', 'min:0'],
-            'notas' => ['nullable', 'string', 'max:1000'],
-            'enviar_a_cocina' => ['nullable', 'boolean'],
+    return view('pedidos.create', [
+        'mesa'    => $mesa,
+        'mesa_id' => $mesa_id,
+        'grupo'   => $grupo,
+    ]);
+}
+
+
+ public function store(Request $request)
+{
+    // VALIDACIÓN
+    $validated = $request->validate([
+        'mesa_id' => ['nullable', 'exists:mesas,id'], 
+        'grupo'   => ['nullable', 'string'],  
+
+        'items' => ['required', 'array'],
+        'items.*' => ['required', 'array'],
+        'items.*.cantidad' => ['required', 'integer', 'min:1'],
+        'items.*.descripcion' => ['nullable', 'string', 'max:500'],
+
+        'notas' => ['nullable', 'string', 'max:1000'],
+        'enviar_a_cocina' => ['nullable', 'boolean'],
+    ]);
+
+    // FILTRAR ITEMS CON CANTIDAD > 0
+    $items = collect($validated['items'])
+        ->filter(fn ($item) => (int) $item['cantidad'] > 0);
+
+    if ($items->isEmpty()) {
+        return back()
+            ->withInput()
+            ->withErrors(['items' => 'Debes seleccionar al menos un producto.']);
+    }
+
+    // OBTENER MESA O MESAS UNIDAS
+    $mesa = null;
+    $mesasUnidas = collect();
+
+    if ($validated['mesa_id']) {
+        // Pedido normal
+        $mesa = Mesa::findOrFail($validated['mesa_id']);
+
+    } else if ($validated['grupo']) {
+        // Pedido por mesas unidas
+        $ids = explode(',', $validated['grupo']); // "1,2,3"
+        $mesasUnidas = Mesa::whereIn('id', $ids)->get();
+    }
+
+    $usuarioId = $request->user()?->id;
+    $pedido = null;
+
+    // GUARDADO EN BASE DE DATOS
+    DB::transaction(function () use ($items, $validated, $usuarioId, &$pedido, $mesa, $mesasUnidas) {
+
+        $estadoInicial = (bool) ($validated['enviar_a_cocina'] ?? false)
+            ? Pedido::ESTADO_EN_COCINA
+            : Pedido::ESTADO_PENDIENTE;
+
+        // CREAR PEDIDO
+        $pedido = Pedido::create([
+            'mesa_id'        => $validated['mesa_id'] ?? null,     // null si es grupo
+            'grupo'          => $validated['grupo'] ?? null, // guarda "1,2,3"
+
+            'mesas_unidas'   => $mesasUnidas->isNotEmpty()
+                        ? $mesasUnidas->pluck('id')->toJson()
+                        : null,
+
+
+            'usuario_id'     => $usuarioId,
+            'estado'         => $estadoInicial,
+            'total'          => 0,
+            'notas'          => $validated['notas'] ?? null,
+            'enviado_a_cocina_at' =>
+                $estadoInicial === Pedido::ESTADO_EN_COCINA ? now() : null,
         ]);
 
-        $items = collect($validated['items'])
-            ->filter(fn ($cantidad) => (int) $cantidad > 0);
+        // GUARDAR DETALLES
+        $total = 0;
 
-        if ($items->isEmpty()) {
-            return back()
-                ->withInput()
-                ->withErrors(['items' => 'Debes seleccionar al menos un producto.']);
-        }
+        foreach ($items as $productoId => $item) {
+            $producto = Producto::activos()->findOrFail($productoId);
 
-        $mesa = Mesa::findOrFail($validated['mesa_id']);
-        $usuarioId = $request->user()?->id;
+            $cantidad = (int) $item['cantidad'];
+            $descripcion = $item['descripcion'] ?? null;
+            $subtotal = $producto->precio * $cantidad;
 
-        $pedido = null;
-
-        DB::transaction(function () use ($items, $validated, $mesa, $usuarioId, &$pedido) {
-            $estadoInicial = (bool) ($validated['enviar_a_cocina'] ?? false)
-                ? Pedido::ESTADO_EN_COCINA
-                : Pedido::ESTADO_PENDIENTE;
-
-            $pedido = Pedido::create([
-                'mesa_id' => $mesa->id,
-                'usuario_id' => $usuarioId,
-                'estado' => $estadoInicial,
-                'total' => 0,
-                'notas' => $validated['notas'] ?? null,
-                'enviado_a_cocina_at' => $estadoInicial === Pedido::ESTADO_EN_COCINA ? Carbon::now() : null,
+            DetallePedido::create([
+                'pedido_id'       => $pedido->id,
+                'producto_id'     => $producto->id,
+                'cantidad'        => $cantidad,
+                'precio_unitario' => $producto->precio,
+                'subtotal'        => $subtotal,
+                'nota_cocina'     => $descripcion,
+                'estado' => $producto->requiere_cocina
+                    ? ($estadoInicial === Pedido::ESTADO_EN_COCINA
+                        ? DetallePedido::ESTADO_EN_PREPARACION
+                        : DetallePedido::ESTADO_PENDIENTE)
+                    : DetallePedido::ESTADO_LISTO,
             ]);
 
-            $total = 0;
+            $total += $subtotal;
+        }
 
-            foreach ($items as $productoId => $cantidad) {
-                $producto = Producto::activos()->findOrFail($productoId);
-                $cantidad = (int) $cantidad;
-                $subtotal = $producto->precio * $cantidad;
+        // ACTUALIZAR TOTAL
+        $pedido->update(['total' => $total]);
 
-                DetallePedido::create([
-                    'pedido_id' => $pedido->id,
-                    'producto_id' => $producto->id,
-                    'cantidad' => $cantidad,
-                    'precio_unitario' => $producto->precio,
-                    'subtotal' => $subtotal,
-                    'estado' => $producto->requiere_cocina
-                        ? ($estadoInicial === Pedido::ESTADO_EN_COCINA
-                            ? DetallePedido::ESTADO_EN_PREPARACION
-                            : DetallePedido::ESTADO_PENDIENTE)
-                        : DetallePedido::ESTADO_LISTO,
-                ]);
-
-                $total += $subtotal;
-            }
-
-            $pedido->update(['total' => $total]);
-
+        // SI ES PEDIDO DE MESA NORMAL → actualizar estado
+        if ($mesa) {
             $mesa->update(['estado' => Mesa::ESTADO_OCUPADA]);
-        });
+        }
+    });
 
-        return redirect()->route('pedidos.show', $pedido)->with('success', 'Pedido registrado correctamente.');
-    }
+    return redirect()->route('pedidos.show', $pedido)
+        ->with('success', 'Pedido registrado correctamente.');
+}
+
+
+
 
     public function show(Pedido $pedido)
 {

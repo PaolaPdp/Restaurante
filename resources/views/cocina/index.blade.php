@@ -65,7 +65,14 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="font-semibold text-slate-800">{{ $detalle->producto->nombre ?? 'Producto eliminado' }}</p>
-                                <p class="text-[11px] text-slate-400">{{ $detalle->created_at?->diffForHumans() }}</p>
+<p class="text-[11px] text-slate-400">{{ $detalle->created_at?->diffForHumans() }}</p>
+
+@if($detalle->comentario)
+    <small class="block text-red-600 font-semibold mt-1">
+        🔥 NOTA: {{ $detalle->comentario }}
+    </small>
+@endif
+
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-600">x{{ $detalle->cantidad }}</span>

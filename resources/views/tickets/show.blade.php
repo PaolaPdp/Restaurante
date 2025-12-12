@@ -35,25 +35,45 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($pedido->detalles as $detalle)
-                    <tr class="border-b border-slate-100">
-                        <td class="py-2">{{ $detalle->producto->nombre ?? 'Producto' }}</td>
-                        <td class="py-2 text-center">{{ $detalle->cantidad }}</td>
-                        <td class="py-2 text-right">S/ {{ number_format($detalle->subtotal, 2) }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="2" class="py-2 text-right font-semibold">Total</td>
-                    <td class="py-2 text-right font-semibold">S/ {{ number_format($pedido->total, 2) }}</td>
-                </tr>
-            </tfoot>
-        </table>
+                <tbody>
+    @foreach($pedido->detalles as $detalle)
+        <tr class="border-b border-slate-100">
+            <td class="py-2">
+                {{ $detalle->producto->nombre ?? 'Producto' }}
 
-        @if($pedido->notas)
-            <p class="mt-4 rounded bg-amber-50 px-3 py-2 text-xs text-amber-700">Nota: {{ $pedido->notas }}</p>
-        @endif
+                {{-- Nota del producto (nota_cocina) --}}
+                @if($detalle->nota_cocina)
+                    <div class="text-xs text-amber-700 mt-1">
+                        → {{ $detalle->nota_cocina }}
+                    </div>
+                @endif
+            </td>
+
+            <td class="py-2 text-center">
+                {{ $detalle->cantidad }}
+            </td>
+
+            <td class="py-2 text-right">
+                S/ {{ number_format($detalle->subtotal, 2) }}
+            </td>
+            
+        </tr>
+
+        
+    @endforeach
+</tbody>
+
+            </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2" class="py-2 text-right font-semibold">Total</td>
+                            <td class="py-2 text-right font-semibold">S/ {{ number_format($pedido->total, 2) }}</td>
+                        </tr>
+                    </tfoot>
+                 
+            </table>
+
+                   
 
         <button onclick="window.print()" class="no-print mt-6 w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Imprimir</button>
     </div>

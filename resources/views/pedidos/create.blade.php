@@ -5,8 +5,15 @@
 <div class="p-4">
 
     <h2 class="text-xl font-bold mb-3">
-        Pedido para Mesa {{ $mesa->numero ?? 'Grupo '.$grupo }}
-    </h2>
+   Pedido para 
+@if($mesa)
+    Mesa {{ $mesa->numero }}
+@else
+    Grupo {{ $grupo }}
+@endif
+
+</h2>
+
 
     <div class="grid grid-cols-3 gap-4">
 
@@ -21,7 +28,13 @@
 
             <form id="pedidoForm" method="POST" action="{{ route('pedidos.store') }}">
                 @csrf
-                <input type="hidden" name="mesa_id" value="{{ $mesa->id }}">
+                 {{-- MESA NORMAL --}}
+                <input type="hidden" name="mesa_id" value="{{ $mesa->id ?? '' }}">
+
+                {{-- GRUPO DE MESAS UNIDAS --}}
+                @if ($grupo)
+                    <input type="hidden" name="grupo" value="{{ $grupo }}">
+                @endif
 
                 <div id="inputsItems"></div>
 
@@ -56,10 +69,28 @@
     </div>
 </div>
 
-{{-- =========================== --}}
-{{--         JAVASCRIPT         --}}
-{{-- =========================== --}}
+{{-- ===================================================== --}}
+{{--                     MODAL DETALLES                    --}}
+{{-- ===================================================== --}}
+<div id="modalDetalles" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white w-96 p-5 rounded shadow-lg">
+        <h2 class="text-xl font-bold mb-3">Agregar detalles</h2>
+
+        <textarea name="detalle" id="detalle" class="w-full border p-2 rounded" rows="4"
+            placeholder="Ejemplo: sin crema, sin cebolla, papas fritas, etc."></textarea>
+
+        <div class="flex justify-end gap-3 mt-4">
+            <button id="cerrarModal" class="px-4 py-2 bg-gray-500 text-white rounded">Cerrar</button>
+            <button id="guardarDetalle" class="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
+        </div>
+    </div>
+</div>
+
+{{-- ===================================================== --}}
+{{--                        JAVASCRIPT                     --}}
+{{-- ===================================================== --}}
 <script>
+
 document.addEventListener('DOMContentLoaded', () => {
 
     const botones = document.querySelectorAll('.tab-btn');
@@ -105,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 let detalle = {};
+let productoSeleccionado = null;
 
 // CLICK EN PRODUCTO
 document.addEventListener('click', function(e) {
@@ -117,7 +149,7 @@ document.addEventListener('click', function(e) {
     let precio = parseFloat(item.dataset.precio);
 
     if (!detalle[id]) {
-        detalle[id] = { nombre, precio, cantidad: 1 };
+        detalle[id] = { nombre, precio, cantidad: 1, descripcion: "" };
     } else {
         detalle[id].cantidad++;
     }
@@ -131,38 +163,55 @@ document.getElementById('pedidoForm').addEventListener('submit', function () {
     inputsContainer.innerHTML = '';
 
     Object.keys(detalle).forEach(productoId => {
-        const cantidad = detalle[productoId].cantidad;
+        const item = detalle[productoId];
 
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = `items[${productoId}]`;
-        input.value = cantidad;
+        // cantidad
+        const inputCant = document.createElement('input');
+        inputCant.type = 'hidden';
+        inputCant.name = `items[${productoId}][cantidad]`;
+        inputCant.value = item.cantidad;
+        inputsContainer.appendChild(inputCant);
 
-        inputsContainer.appendChild(input);
+        // descripción
+        console.log("Enviando:", productoId, item.descripcion);
+
+        const inputDesc = document.createElement('input');
+        inputDesc.type = 'hidden';
+        inputDesc.name = `items[${productoId}][descripcion]`;
+        inputDesc.value = item.descripcion ?? "";
+        inputsContainer.appendChild(inputDesc);
     });
 });
 
-// DIBUJAR DETALLE
+// RENDER DETALLE
 function renderDetalle() {
     const cont = document.getElementById('detallePedido');
     cont.innerHTML = '';
 
     Object.entries(detalle).forEach(([id, item]) => {
         cont.innerHTML += `
-            <div class="flex justify-between items-center mb-2 border-b pb-2">
+            <div class="mb-3 pb-2 border-b">
 
-                <div>
-                    <p class="font-semibold">${item.nombre}</p>
-                    <p class="text-sm text-gray-600">S/. ${item.precio}</p>
-                </div>
+                <div class="flex justify-between">
+                    <div>
+                        <p class="font-semibold">${item.nombre}</p>
+                        <p class="text-sm text-gray-600">S/. ${item.precio}</p>
+                        ${(item.descripcion ?? "") !== "" 
+                            ? `<p class='text-xs text-blue-600 mt-1'>${item.descripcion}</p>` 
+                            : ''}
 
-                <div class="flex items-center gap-2">
+                    </div>
 
-                    <button class="btnMenos bg-red-500 text-white px-2 rounded" data-id="${id}">−</button>
+                    <div class="flex items-center gap-2">
 
-                    <span>${item.cantidad}</span>
+                        <button class="btnMenos bg-red-500 text-white px-2 rounded" data-id="${id}">−</button>
 
-                    <button class="btnMas bg-emerald-500 text-white px-2 rounded" data-id="${id}">+</button>
+                        <span>${item.cantidad}</span>
+
+                        <button class="btnMas bg-emerald-500 text-white px-2 rounded" data-id="${id}">+</button>
+
+                        <button class="btnDetalles bg-blue-500 text-white px-2 rounded" data-id="${id}">Detalles</button>
+                    </div>
                 </div>
 
             </div>
@@ -174,15 +223,20 @@ function renderDetalle() {
     }
 }
 
-// BOTONES + Y −
+
+
+
+// BOTONES + − DETALLES
 document.addEventListener('click', function(e) {
 
+    // aumentar
     if (e.target.classList.contains('btnMas')) {
         let id = e.target.dataset.id;
         detalle[id].cantidad++;
         renderDetalle();
     }
 
+    // disminuir
     if (e.target.classList.contains('btnMenos')) {
         let id = e.target.dataset.id;
         detalle[id].cantidad--;
@@ -191,7 +245,40 @@ document.addEventListener('click', function(e) {
 
         renderDetalle();
     }
+
+    // abrir modal de detalles
+    if (e.target.classList.contains('btnDetalles')) {
+        productoSeleccionado = e.target.dataset.id;
+
+        document.getElementById('detalle').value =
+            detalle[productoSeleccionado].descripcion ?? "";
+
+        document.getElementById('modalDetalles').classList.remove('hidden');
+    }
 });
+
+// Guardar detalle
+document.addEventListener('click', function(e) {
+
+    if (e.target.id === 'guardarDetalle') {
+
+        let texto = document.getElementById('detalle').value.trim();
+
+        detalle[productoSeleccionado].descripcion = texto;
+
+        document.getElementById('modalDetalles').classList.add('hidden');
+
+        renderDetalle();
+    }
+
+});
+
+
+// Cerrar modal
+document.getElementById('cerrarModal').addEventListener('click', () => {
+    document.getElementById('modalDetalles').classList.add('hidden');
+});
+
 </script>
 
 @endsection
