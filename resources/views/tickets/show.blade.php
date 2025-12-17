@@ -77,5 +77,17 @@
 
         <button onclick="window.print()" class="no-print mt-6 w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Imprimir</button>
     </div>
+
+    @if(session('auto_print'))
+<script>
+  window.onload = () => {
+    window.print()
+    setTimeout(() => {
+      window.close()
+    }, 500)
+  }
+</script>
+@endif
+
 </body>
 </html>

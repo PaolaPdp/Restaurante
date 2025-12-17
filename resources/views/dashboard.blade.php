@@ -78,7 +78,7 @@
                         <span class="text-xs text-slate-400">{{ $mesa->capacidad }} pax</span>
                     </div>
                     <div class="mt-3 space-y-2 text-xs text-slate-500">
-                        @forelse($mesa->pedidos as $pedido)
+                        @forelse($mesa->pedidos->whereNotIn('estado', ['pagado','anulado']) as $pedido)
                             <div class="flex items-center justify-between rounded border border-slate-100 px-2 py-1">
                                 <a href="{{ route('pedidos.show', $pedido) }}" class="font-medium text-slate-600">Pedido #{{ $pedido->id }}</a>
                                 <span>{{ ucfirst(str_replace('_', ' ', $pedido->estado)) }}</span>

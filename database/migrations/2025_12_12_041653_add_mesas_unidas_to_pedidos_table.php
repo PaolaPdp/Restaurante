@@ -9,20 +9,18 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::table('pedidos', function (Blueprint $table) {
-            //
-        });
-    }
+    public function up()
+{
+    Schema::table('pedidos', function (Blueprint $table) {
+        $table->json('mesas_unidas')->nullable()->after('mesa_id');
+    });
+}
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::table('pedidos', function (Blueprint $table) {
-            //
-        });
-    }
+public function down()
+{
+    Schema::table('pedidos', function (Blueprint $table) {
+        $table->dropColumn('mesas_unidas');
+    });
+}
+
 };

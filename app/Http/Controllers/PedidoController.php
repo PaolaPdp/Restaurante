@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
+
 class PedidoController extends Controller
 {
     public function index(Request $request)
@@ -108,27 +109,26 @@ class PedidoController extends Controller
     // GUARDADO EN BASE DE DATOS
     DB::transaction(function () use ($items, $validated, $usuarioId, &$pedido, $mesa, $mesasUnidas) {
 
-        $estadoInicial = (bool) ($validated['enviar_a_cocina'] ?? false)
-            ? Pedido::ESTADO_EN_COCINA
-            : Pedido::ESTADO_PENDIENTE;
+        $estadoInicial = Pedido::ESTADO_SERVIDO;
+
+        $enviadoACocinaAt = now();
+
+
 
         // CREAR PEDIDO
-        $pedido = Pedido::create([
-            'mesa_id'        => $validated['mesa_id'] ?? null,     // null si es grupo
-            'grupo'          => $validated['grupo'] ?? null, // guarda "1,2,3"
-
+                $pedido = Pedido::create([
+            'mesa_id'        => $validated['mesa_id'] ?? null,
+            'grupo'          => $validated['grupo'] ?? null,
             'mesas_unidas'   => $mesasUnidas->isNotEmpty()
                         ? $mesasUnidas->pluck('id')->toJson()
                         : null,
-
-
             'usuario_id'     => $usuarioId,
-            'estado'         => $estadoInicial,
+            'estado'         => Pedido::ESTADO_SERVIDO, // 🔥 listo para caja
             'total'          => 0,
             'notas'          => $validated['notas'] ?? null,
-            'enviado_a_cocina_at' =>
-                $estadoInicial === Pedido::ESTADO_EN_COCINA ? now() : null,
+            'enviado_a_cocina_at' => now(), // solo informativo
         ]);
+
 
         // GUARDAR DETALLES
         $total = 0;
@@ -148,10 +148,9 @@ class PedidoController extends Controller
                 'subtotal'        => $subtotal,
                 'nota_cocina'     => $descripcion,
                 'estado' => $producto->requiere_cocina
-                    ? ($estadoInicial === Pedido::ESTADO_EN_COCINA
-                        ? DetallePedido::ESTADO_EN_PREPARACION
-                        : DetallePedido::ESTADO_PENDIENTE)
+                    ? DetallePedido::ESTADO_EN_PREPARACION
                     : DetallePedido::ESTADO_LISTO,
+
             ]);
 
             $total += $subtotal;
@@ -166,11 +165,11 @@ class PedidoController extends Controller
         }
     });
 
-    return redirect()->route('pedidos.show', $pedido)
-        ->with('success', 'Pedido registrado correctamente.');
+    return redirect()
+    ->route('tickets.show', $pedido)
+    ->with('auto_print', true);
+
 }
-
-
 
 
     public function show(Pedido $pedido)
@@ -299,6 +298,16 @@ class PedidoController extends Controller
     return back()->with('success', "El pedido se ha movido a la Mesa {$nuevaMesa->numero}.");
 }
 
+public function pedidosCaja()
+{
+    $pedidos = Pedido::with(['mesa', 'mozo'])
+        ->where('estado', Pedido::ESTADO_SERVIDO)
+        ->whereDoesntHave('venta')
+        ->latest()
+        ->get();
+
+    return view('caja.pedidos', compact('pedidos'));
+}
 
 
 }

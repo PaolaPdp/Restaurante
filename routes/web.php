@@ -8,6 +8,8 @@ use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\VentaController;
+use App\Http\Controllers\CajaController;
+
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'));
@@ -74,4 +76,28 @@ Route::middleware(['auth'])->group(function () {
         Route::get('ventas', [VentaController::class, 'index'])->name('ventas.index');
         Route::post('ventas', [VentaController::class, 'store'])->name('ventas.store');
     });
+
+    Route::middleware(['auth'])->group(function () {
+
+          
+
+});
+
+Route::get('/caja', [CajaController::class, 'index'])
+    ->middleware('auth')
+    ->name('caja.index');
+
+
+
+    
+    Route::get('/caja/pedidos', [PedidoController::class, 'pedidosCaja'])
+    ->name('caja.pedidos');
+
+    Route::get('/ventas/{pedido}/create', [VentaController::class, 'create'])
+    ->name('ventas.create');
+
+    
+
+
+
 });

@@ -19,8 +19,12 @@ class DashboardController extends Controller
         }
 
         if ($user->role === 'caja') {
-            return redirect()->route('ventas.index');
-        }
+    return redirect()->route('caja.index');
+        
+
+
+}
+
 
         $mesas = Mesa::with(['pedidos' => function ($query) use ($user) {
             $query->abiertos()->latest();
