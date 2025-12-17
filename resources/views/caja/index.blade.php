@@ -26,10 +26,11 @@
                 S/ {{ number_format($mesa->pedidos->sum('total'), 2) }}
             </div>
 
-            <a href="{{ route('ventas.create', $mesa) }}"
-               class="mt-4 block text-center rounded bg-emerald-600 text-white py-2 text-sm font-semibold hover:bg-emerald-700">
-                Cobrar mesa
-            </a>
+            <a href="{{ route('ventas.create', $pedido->id) }}"
+   class="btn btn-success">
+    Cobrar mesa
+</a>
+
         </article>
     @empty
         <p class="text-slate-500">No hay mesas para cobrar.</p>

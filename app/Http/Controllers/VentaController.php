@@ -33,6 +33,21 @@ class VentaController extends Controller
         return view('ventas.index', compact('ventas', 'stats', 'mediosPago'));
     }
 
+    public function create($pedidoId)
+{
+    $pedido = Pedido::findOrFail($pedidoId);
+
+    if ($pedido->estado !== Pedido::ESTADO_SERVIDO) {
+        return redirect()
+            ->route('caja.index')
+            ->with('info', 'El pedido aún no está listo para cobrar.');
+    }
+
+    return view('ventas.create', compact('pedido'));
+}
+
+
+
     public function store(Request $request)
     {
         $validated = $request->validate([

@@ -11,48 +11,56 @@ use Illuminate\Support\Carbon;
 class DashboardController extends Controller
 {
     public function __invoke(Request $request)
-    {
-        $user = $request->user();
+{
+    $user = $request->user();
 
-        if ($user->role === 'cocina') {
-            return redirect()->route('cocina.pedidos');
-        }
+    if ($user->role === 'cocina') {
+        return redirect()->route('cocina.pedidos');
+    }
 
-        if ($user->role === 'caja') {
-    return redirect()->route('caja.index');
-        
+    if ($user->role === 'caja') {
+        return redirect()->route('caja.index');
+    }
 
+    // 🔵 MOZO → SOLO MESAS
+    if ($user->role === 'mozo') {
 
-}
-
-
-        $mesas = Mesa::with(['pedidos' => function ($query) use ($user) {
-            $query->abiertos()->latest();
-        }])->orderBy('numero')->get();
-
-        $pedidos = Pedido::with(['mesa', 'mozo'])
-            ->abiertos()
-            ->when($user->role === 'mozo', fn ($query) => $query->where('usuario_id', $user->id))
-            ->latest()
-            ->take(10)
+        $mesas = Mesa::with(['pedidos' => function ($q) use ($user) {
+                $q->abiertos()
+                  ->where('usuario_id', $user->id);
+            }])
+            ->orderBy('numero')
             ->get();
 
-        $totalMesas = Mesa::count();
-        $mesasLibres = Mesa::where('estado', Mesa::ESTADO_LIBRE)->count();
-        $mesasOcupadas = Mesa::where('estado', Mesa::ESTADO_OCUPADA)->count();
-        $mesasEnCuenta = Mesa::where('estado', Mesa::ESTADO_CUENTA)->count();
-
-        $stats = [
-            'total_mesas' => $totalMesas,
-            'libres' => $mesasLibres,
-            'ocupadas' => $mesasOcupadas,
-            'en_cuenta' => $mesasEnCuenta,
-            'ocupacion' => $totalMesas > 0 ? round((($mesasOcupadas + $mesasEnCuenta) / $totalMesas) * 100) : 0,
-            'pedidos_activos' => Pedido::abiertos()->count(),
-            'cocina_en_preparacion' => Pedido::where('estado', Pedido::ESTADO_EN_COCINA)->count(),
-            'ventas_hoy' => Venta::whereDate('fecha', Carbon::today())->sum('total'),
-        ];
-
-        return view('dashboard', compact('mesas', 'pedidos', 'stats'));
+        return view('dashboard_mozo', compact('mesas'));
     }
+
+    // 🟢 ADMIN → TODO
+    $mesas = Mesa::with(['pedidos' => fn ($q) => $q->abiertos()])
+        ->orderBy('numero')
+        ->get();
+
+    $pedidos = Pedido::with(['mesa', 'mozo'])
+        ->abiertos()
+        ->latest()
+        ->take(10)
+        ->get();
+
+    $stats = [
+        'total_mesas' => Mesa::count(),
+        'libres' => Mesa::where('estado', Mesa::ESTADO_LIBRE)->count(),
+        'ocupadas' => Mesa::where('estado', Mesa::ESTADO_OCUPADA)->count(),
+        'en_cuenta' => Mesa::where('estado', Mesa::ESTADO_CUENTA)->count(),
+        'ocupacion' => Mesa::count() > 0
+            ? round(((Mesa::whereIn('estado', [
+                Mesa::ESTADO_OCUPADA,
+                Mesa::ESTADO_CUENTA,
+            ])->count()) / Mesa::count()) * 100)
+            : 0,
+        'pedidos_activos' => Pedido::abiertos()->count(),
+    ];
+
+    return view('dashboard', compact('mesas', 'pedidos', 'stats'));
+}
+
 }
