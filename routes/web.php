@@ -71,6 +71,13 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin,mozo')->group(function () {
         Route::get('pedidos/create', [PedidoController::class, 'create'])->name('pedidos.create');
         Route::post('pedidos', [PedidoController::class, 'store'])->name('pedidos.store');
+        // Editar y actualizar pedido
+        Route::get('pedidos/{pedido}/edit', [PedidoController::class, 'edit'])
+            ->whereNumber('pedido')
+            ->name('pedidos.edit');
+        Route::patch('pedidos/{pedido}', [PedidoController::class, 'update'])
+            ->whereNumber('pedido')
+            ->name('pedidos.update');
         Route::post('pedidos/{pedido}/enviar', [PedidoController::class, 'enviarACocina'])
             ->whereNumber('pedido')
             ->name('pedidos.enviar');

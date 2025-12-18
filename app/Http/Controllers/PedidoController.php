@@ -51,7 +51,7 @@ class PedidoController extends Controller
     // Si es un pedido por grupo, NO hay mesa individual
     $mesa = null;
 
-    if ($mesa_id) { 
+    if ($mesa_id) {
         $mesa = \App\Models\Mesa::find($mesa_id);
     }
 
@@ -67,8 +67,8 @@ class PedidoController extends Controller
 {
     // VALIDACIÓN
     $validated = $request->validate([
-        'mesa_id' => ['nullable', 'exists:mesas,id'], 
-        'grupo'   => ['nullable', 'string'],  
+        'mesa_id' => ['nullable', 'exists:mesas,id'],
+        'grupo'   => ['nullable', 'string'],
 
         'items' => ['required', 'array'],
         'items.*' => ['required', 'array'],
@@ -173,13 +173,90 @@ class PedidoController extends Controller
 
 
     public function show(Pedido $pedido)
-{
-    $pedido->load(['mesa', 'mozo', 'detalles.producto', 'venta']);
+    {
+        $pedido->load(['mesa', 'mozo', 'detalles.producto', 'venta']);
 
     // 🔹 Agregamos todas las mesas para el modal "Cambiar mesa"
     $mesas = \App\Models\Mesa::orderBy('numero')->get();
 
     return view('pedidos.show', compact('pedido', 'mesas'));
+}
+
+public function edit(Pedido $pedido)
+{
+    $this->autorizarAccionMozo($pedido);
+
+    if (in_array($pedido->estado, [Pedido::ESTADO_PAGADO, Pedido::ESTADO_ANULADO], true)) {
+        return redirect()->route('pedidos.show', $pedido)
+            ->with('info', 'No se puede modificar un pedido pagado o anulado.');
+    }
+
+    $pedido->load(['mesa', 'detalles.producto']);
+
+    // Para permitir agregar nuevos productos, cargamos productos activos
+    $productos = Producto::activos()->orderBy('nombre')->get(['id','nombre','precio']);
+
+    return view('pedidos.edit', compact('pedido', 'productos'));
+}
+
+public function update(Request $request, Pedido $pedido)
+{
+    $this->autorizarAccionMozo($pedido);
+
+    if (in_array($pedido->estado, [Pedido::ESTADO_PAGADO, Pedido::ESTADO_ANULADO], true)) {
+        return back()->with('info', 'No se puede modificar un pedido pagado o anulado.');
+    }
+
+    $validated = $request->validate([
+        'items' => ['required', 'array'],
+        'items.*' => ['required', 'array'],
+        'items.*.cantidad' => ['required', 'integer', 'min:1'],
+        'items.*.descripcion' => ['nullable', 'string', 'max:500'],
+        'notas' => ['nullable', 'string', 'max:1000'],
+    ]);
+
+    $items = collect($validated['items'])
+        ->filter(fn ($item) => (int) $item['cantidad'] > 0);
+
+    if ($items->isEmpty()) {
+        return back()->withInput()->withErrors(['items' => 'Debes seleccionar al menos un producto.']);
+    }
+
+    DB::transaction(function () use ($items, $validated, $pedido) {
+        // Eliminar detalles actuales y recrear con la nueva selección
+        $pedido->detalles()->delete();
+
+        $total = 0;
+
+        foreach ($items as $productoId => $item) {
+            $producto = Producto::activos()->findOrFail($productoId);
+
+            $cantidad = (int) $item['cantidad'];
+            $descripcion = $item['descripcion'] ?? null;
+            $subtotal = $producto->precio * $cantidad;
+
+            DetallePedido::create([
+                'pedido_id'       => $pedido->id,
+                'producto_id'     => $producto->id,
+                'cantidad'        => $cantidad,
+                'precio_unitario' => $producto->precio,
+                'subtotal'        => $subtotal,
+                'nota_cocina'     => $descripcion,
+                'estado' => $producto->requiere_cocina
+                    ? DetallePedido::ESTADO_EN_PREPARACION
+                    : DetallePedido::ESTADO_LISTO,
+            ]);
+
+            $total += $subtotal;
+        }
+
+        $pedido->update([
+            'total' => $total,
+            'notas' => $validated['notas'] ?? $pedido->notas,
+        ]);
+    });
+
+    return redirect()->route('pedidos.show', $pedido)->with('success', 'Pedido actualizado correctamente.');
 }
 
 

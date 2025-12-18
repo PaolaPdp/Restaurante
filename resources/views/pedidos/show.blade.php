@@ -14,6 +14,9 @@
   </div>
   <div class="flex flex-wrap items-center gap-2 portrait:flex-col portrait:items-stretch portrait:gap-3">
     <a href="{{ route('tickets.show', $pedido) }}" target="_blank" class="rounded-md bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-300 portrait:w-full portrait:text-center">Imprimir ticket</a>
+    @if(in_array(auth()->user()->role, ['mozo','admin'], true) && !in_array($pedido->estado, [\App\Models\Pedido::ESTADO_PAGADO, \App\Models\Pedido::ESTADO_ANULADO], true))
+      <a href="{{ route('pedidos.edit', $pedido) }}" class="rounded-md bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-700 portrait:w-full portrait:text-center">Modificar</a>
+    @endif
     <a href="{{ route('pedidos.index') }}" class="rounded-md bg-slate-800 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-900 portrait:w-full portrait:text-center">Volver</a>
   </div>
 </div>
