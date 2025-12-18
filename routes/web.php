@@ -58,17 +58,34 @@ Route::middleware('auth')->group(function () {
     */
     Route::middleware('role:admin,mozo,caja')->group(function () {
         Route::get('pedidos', [PedidoController::class, 'index'])->name('pedidos.index');
-        Route::get('pedidos/{pedido}', [PedidoController::class, 'show'])->name('pedidos.show');
-        Route::get('tickets/{pedido}', [TicketController::class, 'show'])->name('tickets.show');
+        // Asegurar que la ruta específica /pedidos/create no sea capturada por el comodín {pedido}
+        // Alternativamente, restringimos {pedido} a numérico
+        Route::get('pedidos/{pedido}', [PedidoController::class, 'show'])
+            ->whereNumber('pedido')
+            ->name('pedidos.show');
+        Route::get('tickets/{pedido}', [TicketController::class, 'show'])
+            ->whereNumber('pedido')
+            ->name('tickets.show');
     });
 
     Route::middleware('role:admin,mozo')->group(function () {
         Route::get('pedidos/create', [PedidoController::class, 'create'])->name('pedidos.create');
         Route::post('pedidos', [PedidoController::class, 'store'])->name('pedidos.store');
-        Route::post('pedidos/{pedido}/enviar', [PedidoController::class, 'enviarACocina'])->name('pedidos.enviar');
-        Route::post('pedidos/{pedido}/servido', [PedidoController::class, 'marcarServido'])->name('pedidos.servido');
-        Route::post('pedidos/{pedido}/anular', [PedidoController::class, 'anular'])->name('pedidos.anular');
-        Route::post('pedidos/{pedido}/cambiar-mesa', [PedidoController::class, 'cambiarMesa'])->name('pedidos.cambiarMesa');
+        Route::post('pedidos/{pedido}/enviar', [PedidoController::class, 'enviarACocina'])
+            ->whereNumber('pedido')
+            ->name('pedidos.enviar');
+        Route::post('pedidos/{pedido}/servido', [PedidoController::class, 'marcarServido'])
+            ->whereNumber('pedido')
+            ->name('pedidos.servido');
+        Route::post('pedidos/{pedido}/anular', [PedidoController::class, 'anular'])
+            ->whereNumber('pedido')
+            ->name('pedidos.anular');
+        Route::post('pedidos/{pedido}/cambiar-mesa', [PedidoController::class, 'cambiarMesa'])
+            ->whereNumber('pedido')
+            ->name('pedidos.cambiarMesa');
+        // Endpoint para la vista de nuevo pedido: cargar productos por categoría (JSON)
+        Route::get('productos/por-categoria/{categoria}', [ProductController::class, 'obtenerPorCategoria'])
+            ->name('productos.porCategoria');
     });
 
     /*
@@ -78,7 +95,9 @@ Route::middleware('auth')->group(function () {
     */
     Route::middleware('role:admin,cocina')->group(function () {
         Route::get('cocina/pedidos', [KitchenController::class, 'index'])->name('cocina.pedidos');
-        Route::patch('cocina/detalles/{detalle}', [KitchenController::class, 'actualizarDetalle'])->name('cocina.detalles.actualizar');
+        Route::patch('cocina/detalles/{detalle}', [KitchenController::class, 'actualizarDetalle'])
+            ->whereNumber('detalle')
+            ->name('cocina.detalles.actualizar');
         Route::post('cocina/pedidos/{pedido}/listo', [KitchenController::class, 'marcarPedidoListo'])->name('cocina.pedidos.listo');
     });
 
@@ -93,7 +112,9 @@ Route::middleware('auth')->group(function () {
 
         Route::get('ventas', [VentaController::class, 'index'])->name('ventas.index');
         Route::post('ventas', [VentaController::class, 'store'])->name('ventas.store');
-        Route::get('ventas/{pedido}/create', [VentaController::class, 'create'])->name('ventas.create');
+        Route::get('ventas/{pedido}/create', [VentaController::class, 'create'])
+            ->whereNumber('pedido')
+            ->name('ventas.create');
     });
 
 });

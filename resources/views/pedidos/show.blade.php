@@ -41,7 +41,7 @@
 
   <div class="mt-4 overflow-x-auto">
   <table class="min-w-full divide-y divide-slate-200 text-sm">
-       
+
         <tbody class="divide-y divide-slate-100">
     @foreach($pedido->detalles as $detalle)
         <tr>
@@ -200,8 +200,8 @@
       </article>
     @endif
 
-    @if($pedido->mesas_unidas) 
-    <p><strong>Mesas unidas:</strong> 
+    @if($pedido->mesas_unidas)
+    <p><strong>Mesas unidas:</strong>
         {{ implode(', ', json_decode($pedido->mesas_unidas, true)) }}
     </p>
 @else
