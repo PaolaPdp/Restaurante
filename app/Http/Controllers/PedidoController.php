@@ -45,131 +45,96 @@ class PedidoController extends Controller
 
     public function create(Request $request)
 {
-    $grupo = $request->grupo;
-    $mesa_id = $request->mesa_id;
-
-    // Si es un pedido por grupo, NO hay mesa individual
     $mesa = null;
+    $mesasGrupo = collect();
+    $grupo = $request->grupo;
 
-    if ($mesa_id) {
-        $mesa = \App\Models\Mesa::find($mesa_id);
+    if ($request->mesa_id) {
+        $mesa = Mesa::findOrFail($request->mesa_id);
     }
 
-    return view('pedidos.create', [
-        'mesa'    => $mesa,
-        'mesa_id' => $mesa_id,
-        'grupo'   => $grupo,
-    ]);
+    if ($grupo) {
+        $mesasGrupo = Mesa::where('combinada_grupo', $grupo)->get();
+    }
+
+    return view('pedidos.create', compact('mesa', 'grupo', 'mesasGrupo'));
 }
 
 
- public function store(Request $request)
+
+public function store(Request $request)
 {
-    // VALIDACIÓN
-    $validated = $request->validate([
-        'mesa_id' => ['nullable', 'exists:mesas,id'],
-        'grupo'   => ['nullable', 'string'],
-
-        'items' => ['required', 'array'],
-        'items.*' => ['required', 'array'],
-        'items.*.cantidad' => ['required', 'integer', 'min:1'],
-        'items.*.descripcion' => ['nullable', 'string', 'max:500'],
-
-        'notas' => ['nullable', 'string', 'max:1000'],
-        'enviar_a_cocina' => ['nullable', 'boolean'],
+    $data = $request->validate([
+        'mesa_id' => 'nullable|exists:mesas,id',
+        'grupo'   => 'nullable',
+        'notas'   => 'nullable|string',
+        'items'   => 'required|array',
+        'items.*.cantidad' => 'required|integer|min:1',
+        'items.*.descripcion' => 'nullable|string|max:500',
     ]);
 
-    // FILTRAR ITEMS CON CANTIDAD > 0
-    $items = collect($validated['items'])
-        ->filter(fn ($item) => (int) $item['cantidad'] > 0);
+    DB::transaction(function () use ($data, &$pedido) {
 
-    if ($items->isEmpty()) {
-        return back()
-            ->withInput()
-            ->withErrors(['items' => 'Debes seleccionar al menos un producto.']);
-    }
+        $pedido = new Pedido();
+        $pedido->usuario_id = auth()->id();
+        $pedido->estado = Pedido::ESTADO_PENDIENTE;
+        $pedido->notas = $data['notas'] ?? null;
 
-    // OBTENER MESA O MESAS UNIDAS
-    $mesa = null;
-    $mesasUnidas = collect();
+        // 🟢 PEDIDO CON MESAS UNIDAS
+        if (!empty($data['grupo'])) {
 
-    if ($validated['mesa_id']) {
-        // Pedido normal
-        $mesa = Mesa::findOrFail($validated['mesa_id']);
+            $mesas = Mesa::where('combinada_grupo', $data['grupo'])->get();
 
-    } else if ($validated['grupo']) {
-        // Pedido por mesas unidas
-        $ids = explode(',', $validated['grupo']); // "1,2,3"
-        $mesasUnidas = Mesa::whereIn('id', $ids)->get();
-    }
+            $pedido->grupo = $mesas->pluck('id')->toJson();
+            $pedido->mesa_id = null;
 
-    $usuarioId = $request->user()?->id;
-    $pedido = null;
+            Mesa::whereIn('id', $mesas->pluck('id'))
+                ->update(['estado' => Mesa::ESTADO_OCUPADA]);
+        }
+        // 🟢 PEDIDO CON UNA SOLA MESA
+        elseif (!empty($data['mesa_id'])) {
 
-    // GUARDADO EN BASE DE DATOS
-    DB::transaction(function () use ($items, $validated, $usuarioId, &$pedido, $mesa, $mesasUnidas) {
+            $pedido->mesa_id = $data['mesa_id'];
+            $pedido->grupo = null;
 
-        $estadoInicial = Pedido::ESTADO_SERVIDO;
+            Mesa::where('id', $data['mesa_id'])
+                ->update(['estado' => Mesa::ESTADO_OCUPADA]);
+        }
 
-        $enviadoACocinaAt = now();
+        $pedido->save();
 
-
-
-        // CREAR PEDIDO
-                $pedido = Pedido::create([
-            'mesa_id'        => $validated['mesa_id'] ?? null,
-            'grupo'          => $validated['grupo'] ?? null,
-            'mesas_unidas'   => $mesasUnidas->isNotEmpty()
-                        ? $mesasUnidas->pluck('id')->toJson()
-                        : null,
-            'usuario_id'     => $usuarioId,
-            'estado'         => Pedido::ESTADO_SERVIDO, // 🔥 listo para caja
-            'total'          => 0,
-            'notas'          => $validated['notas'] ?? null,
-            'enviado_a_cocina_at' => now(), // solo informativo
-        ]);
-
-
-        // GUARDAR DETALLES
+        // 🟢 GUARDAR PRODUCTOS
         $total = 0;
 
-        foreach ($items as $productoId => $item) {
-            $producto = Producto::activos()->findOrFail($productoId);
+        foreach ($data['items'] as $productoId => $item) {
 
-            $cantidad = (int) $item['cantidad'];
-            $descripcion = $item['descripcion'] ?? null;
-            $subtotal = $producto->precio * $cantidad;
+            $producto = Producto::findOrFail($productoId);
+            $subtotal = $producto->precio * $item['cantidad'];
 
             DetallePedido::create([
-                'pedido_id'       => $pedido->id,
-                'producto_id'     => $producto->id,
-                'cantidad'        => $cantidad,
+                'pedido_id' => $pedido->id,
+                'producto_id' => $producto->id,
+                'cantidad' => $item['cantidad'],
                 'precio_unitario' => $producto->precio,
-                'subtotal'        => $subtotal,
-                'nota_cocina'     => $descripcion,
+                'subtotal' => $subtotal,
+                'notas' => $item['descripcion'] ?? null,
                 'estado' => $producto->requiere_cocina
-                    ? DetallePedido::ESTADO_EN_PREPARACION
+                    ? DetallePedido::ESTADO_PENDIENTE
                     : DetallePedido::ESTADO_LISTO,
-
             ]);
 
             $total += $subtotal;
         }
 
-        // ACTUALIZAR TOTAL
         $pedido->update(['total' => $total]);
-
-        // SI ES PEDIDO DE MESA NORMAL → actualizar estado
-        if ($mesa) {
-            $mesa->update(['estado' => Mesa::ESTADO_OCUPADA]);
-        }
     });
 
-    return redirect()
-    ->route('tickets.show', $pedido)
-    ->with('auto_print', true);
-
+    return redirect()->route('pedidos.show', $pedido);
 }
+
+
+
+
 
 
     public function show(Pedido $pedido)
@@ -241,7 +206,7 @@ public function update(Request $request, Pedido $pedido)
                 'cantidad'        => $cantidad,
                 'precio_unitario' => $producto->precio,
                 'subtotal'        => $subtotal,
-                'nota_cocina'     => $descripcion,
+                'notas'     => $descripcion,
                 'estado' => $producto->requiere_cocina
                     ? DetallePedido::ESTADO_EN_PREPARACION
                     : DetallePedido::ESTADO_LISTO,
@@ -337,6 +302,7 @@ public function update(Request $request, Pedido $pedido)
         if ($user->role === 'mozo' && $pedido->usuario_id !== $user->id) {
             abort(403);
         }
+
     }
      public function cambiarMesa(Request $request, $pedidoId)
 {
@@ -349,8 +315,14 @@ public function update(Request $request, Pedido $pedido)
     $mesaAnterior = $pedido->mesa;
     $nuevaMesa = \App\Models\Mesa::findOrFail($request->nueva_mesa_id);
 
+    if (!$mesaAnterior) {
+    return back()->with('error', 'Este pedido no tiene mesa asignada.');
+}
+
+
     // Validar que la nueva mesa esté libre
-    if ($nuevaMesa->estado !== 'libre') {
+    if ($nuevaMesa->estado !== Mesa::ESTADO_LIBRE) {
+
         return back()->with('error', 'La mesa seleccionada no está disponible.');
     }
 
@@ -363,14 +335,14 @@ public function update(Request $request, Pedido $pedido)
     $mensaje = "El pedido de la mesa {$mesaAnterior->numero} se ha movido a la mesa {$nuevaMesa->numero} el {$fecha}.";
 
     $mesaAnterior->update([
-        'estado' => 'libre',
-        'observaciones' => $mensaje,
-    ]);
+    'estado' => Mesa::ESTADO_LIBRE,
+    'observaciones' => $mensaje,
+]);
 
-    $nuevaMesa->update([
-        'estado' => 'ocupada',
-        'observaciones' => $mensaje,
-    ]);
+$nuevaMesa->update([
+    'estado' => Mesa::ESTADO_OCUPADA,
+    'observaciones' => $mensaje,
+]);
 
     return back()->with('success', "El pedido se ha movido a la Mesa {$nuevaMesa->numero}.");
 }
