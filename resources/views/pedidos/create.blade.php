@@ -17,7 +17,7 @@
 
     <div class="grid grid-cols-3 gap-4">
 
-        {{-- PANEL IZQUIERDO: DETALLE DEL PEDIDO --}}
+        {{-- PANEL IZQUIERDO: DETALLE DEL PEDIDO 1 --}}
         <div class="col-span-1 bg-white p-4 rounded shadow">
 
             <h3 class="text-lg font-bold mb-3">Detalle del Pedido</h3>
