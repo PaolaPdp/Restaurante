@@ -5,16 +5,14 @@
 <div class="p-4">
 
     <h2 class="text-xl font-bold mb-3">
-    Pedido para
-    @if($mesa)
-        Mesa {{ $mesa->numero }}
-    @elseif($grupo)
-        Mesas {{ $mesasGrupo->pluck('numero')->join(', ') }}
-    @else
-        Para llevar
-    @endif
-</h2>
+   Pedido para 
+@if($mesa)
+    Mesa {{ $mesa->numero }}
+@else
+    Grupo {{ $grupo }}
+@endif
 
+</h2>
 
 
     <div class="grid grid-cols-3 gap-4">
@@ -29,23 +27,21 @@
             </div>
 
             <form id="pedidoForm" method="POST" action="{{ route('pedidos.store') }}">
-    @csrf
+                @csrf
+                 {{-- MESA NORMAL --}}
+                <input type="hidden" name="mesa_id" value="{{ $mesa->id ?? '' }}">
 
-    @if($mesa)
-        <input type="hidden" name="mesa_id" value="{{ $mesa->id }}">
-    @endif
+                {{-- GRUPO DE MESAS UNIDAS --}}
+                @if ($grupo)
+                    <input type="hidden" name="grupo" value="{{ $grupo }}">
+                @endif
 
-    @if($grupo)
-        <input type="hidden" name="grupo" value="{{ $grupo }}">
-    @endif
+                <div id="inputsItems"></div>
 
-    <div id="inputsItems"></div>
-
-    <button type="submit" class="mt-4 w-full bg-green-600 text-white p-3 rounded-lg">
-        Confirmar Pedido
-    </button>
-</form>
-
+                <button type="submit" class="mt-4 w-full bg-green-600 text-white p-3 rounded-lg">
+                    Confirmar Pedido
+                </button>
+            </form>
 
         </div>
 
