@@ -77,9 +77,25 @@
         </div>
     </div>
 @endif
+{{-- Formulario para agregar producto --}}
+<div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
 
-<div class="mt-6 grid gap-6 lg:grid-cols-3">
-    <form action="{{ route('productos.store') }}" method="POST" class="lg:col-span-1 space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg">
+<form
+  action="{{ route('productos.store') }}"
+  method="POST"
+  class="
+    lg:col-span-1
+    space-y-4
+    rounded-2xl
+    border border-slate-200
+    bg-white
+    p-6
+    shadow-lg
+    max-w-md
+    max-w-md lg:max-w-none
+    lg:max-w-none
+  "
+>
         @csrf
         <h2 class="text-lg font-semibold text-slate-900">Agregar producto</h2>
         <div>
@@ -104,10 +120,7 @@
             <label class="text-sm font-medium text-slate-600">Descripción</label>
             <textarea name="descripcion" rows="3" class="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-emerald-300" placeholder="Detalle opcional">{{ old('descripcion') }}</textarea>
         </div>
-        <div class="flex items-center gap-2 text-sm text-slate-600">
-            <input type="checkbox" name="requiere_cocina" value="1" class="h-4 w-4 rounded border-slate-300" {{ old('requiere_cocina', true) ? 'checked' : '' }}>
-            Requiere preparación en cocina
-        </div>
+        
         <div>
             <label class="text-sm font-medium text-slate-600">Estado</label>
             @php($estadoCreacion = old('estado', \App\Models\Producto::ESTADO_ACTIVO))

@@ -14,13 +14,13 @@
 <body class="bg-slate-100 font-[Inter] text-slate-800">
   <div class="min-h-screen">
     <header class="bg-white shadow-sm">
-      <div class="mx-auto max-w-7xl px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="mx-auto max-w-7xl px-3 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2 sm:gap-4">
         <div>
           <a href="{{ route('dashboard') }}" class="text-lg font-semibold text-emerald-600">Restaurante POS</a>
-          <p class="text-xs text-slate-500">Sistema de gestión para mozos y cocina</p>
+          <p class="text-xs text-slate-500">Sistema de gestión para mozos y caja</p>
         </div>
         @auth
-        <nav class="flex flex-wrap items-center gap-2 text-sm font-medium">
+        <nav class="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm font-medium">
           @php
             $role = auth()->user()->role;
           @endphp
@@ -29,10 +29,8 @@
           @endif
           @if(in_array($role, ['admin', 'mozo'], true))
             <a href="{{ route('pedidos.index') }}" class="px-3 py-2 rounded-md {{ request()->routeIs('pedidos.*') ? 'bg-emerald-100 text-emerald-700' : 'hover:bg-slate-100' }}">Pedidos</a>
-          @endif
-          @if(in_array($role, ['admin', 'cocina'], true))
-            <a href="{{ route('cocina.pedidos') }}" class="px-3 py-2 rounded-md {{ request()->routeIs('cocina.*') ? 'bg-emerald-100 text-emerald-700' : 'hover:bg-slate-100' }}">Cocina</a>
-          @endif
+          @endif         
+          
           @if(in_array($role, ['admin', 'caja'], true))
             <a href="{{ route('ventas.index') }}" class="px-3 py-2 rounded-md {{ request()->routeIs('ventas.*') ? 'bg-emerald-100 text-emerald-700' : 'hover:bg-slate-100' }}">Ventas</a>
           @endif
@@ -54,7 +52,7 @@
       </div>
     </header>
 
-    <main class="mx-auto max-w-7xl px-6 py-8">
+    <main class="p-3 sm:p-6">
       @if(session('success'))
         <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           {{ session('success') }}

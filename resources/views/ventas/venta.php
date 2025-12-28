@@ -1,3 +1,5 @@
+<?php
+
 // app/Models/Venta.php
 namespace App\Models;
 

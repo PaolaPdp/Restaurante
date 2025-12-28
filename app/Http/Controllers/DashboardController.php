@@ -14,9 +14,9 @@ class DashboardController extends Controller
 {
     $user = $request->user();
 
-    if ($user->role === 'cocina') {
-        return redirect()->route('cocina.pedidos');
-    }
+    // if ($user->role === 'cocina') {
+    //     return redirect()->route('cocina.pedidos');
+    // }
 
     if ($user->role === 'caja') {
         return redirect()->route('caja.index');

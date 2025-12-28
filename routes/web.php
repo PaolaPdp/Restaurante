@@ -49,6 +49,7 @@ Route::middleware('auth')->group(function () {
         Route::post('mesas/{mesa}/liberar', [MesaController::class, 'liberar'])->name('mesas.liberar');
         Route::post('mesas/unir', [MesaController::class, 'unir'])->name('mesas.unir');
         Route::post('mesas/separar/{grupo}', [MesaController::class, 'separar'])->name('mesas.separar');
+        Route::resource('productos', ProductController::class);
     });
 
     /*

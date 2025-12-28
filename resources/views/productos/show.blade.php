@@ -23,10 +23,7 @@
         <dt class="text-slate-500">Precio</dt>
         <dd class="font-medium text-slate-700">S/ {{ number_format($producto->precio, 2) }}</dd>
       </div>
-      <div class="flex justify-between">
-        <dt class="text-slate-500">Requiere cocina</dt>
-        <dd class="font-medium text-slate-700">{{ $producto->requiere_cocina ? 'Sí' : 'No' }}</dd>
-      </div>
+      
       <div class="flex justify-between">
         <dt class="text-slate-500">Estado</dt>
         <dd class="font-medium text-slate-700">{{ $estadosDisponibles[$producto->estado] ?? ucfirst($producto->estado) }}</dd>
